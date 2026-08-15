@@ -135,6 +135,14 @@ Stated rather than hidden — each is a deliberate trade.
 Every document used in development and in the demo is fabricated. No real ID
 appears in this repository, its history, or the demo video.
 
+## Licence
+
+MIT — see [LICENSE](LICENSE).
+
+The vendored face-detection model in `vendor/` is Google's BlazeFace, published
+under Apache-2.0 as part of MediaPipe. Tesseract, PDF.js and the IBM Plex and
+Newsreader typefaces carry their own licences, all permissive.
+
 ---
 
 Built for CodeStorm 2026: FutureForge. Design and product notes are in `docs/`;
