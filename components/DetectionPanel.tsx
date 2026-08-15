@@ -33,7 +33,7 @@ export default function DetectionPanel({
         onClick={() => setDrawing(!drawing)}
         aria-pressed={drawing}
         className={`rounded px-3 py-2 text-[15px] font-medium ${
-          drawing ? 'bg-stamp text-white' : 'border-stamp text-stamp border'
+          drawing ? 'bg-action hover:bg-action-hover text-white' : 'border-action text-action border'
         }`}
       >
         {drawing ? 'Drawing — drag on the document' : '+ Draw a box'}

@@ -96,7 +96,7 @@ export default function Landing() {
           >
             <Link
               href="/tool"
-              className="bg-stamp press rounded px-5 py-3 text-[17px] font-medium text-white"
+              className="bg-action hover:bg-action-hover press rounded px-5 py-3 text-[17px] font-medium text-white"
             >
               Open Pehchaan
             </Link>
@@ -184,7 +184,7 @@ export default function Landing() {
           </p>
           <Link
             href="/tool"
-            className="bg-stamp press rounded px-5 py-3 text-[17px] font-medium text-white"
+            className="bg-action hover:bg-action-hover press rounded px-5 py-3 text-[17px] font-medium text-white"
           >
             Open Pehchaan
           </Link>

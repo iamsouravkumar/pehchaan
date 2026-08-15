@@ -13,6 +13,15 @@
   --redact: #0a0a0b;
   --safe: #2f6f55;
   --alert: #a63a2e;
+
+  /* Buttons, kept separate from --stamp. Stamp still means *state* — the
+     current step, a detected box, a focus ring — and reusing it for actions
+     made every clickable thing compete with those signals. Graphite reads as
+     the redaction bar the product is named for, and leaves violet to mean
+     something. Change these three values to restyle every button. */
+  --action: #23252b;
+  --action-hover: #35383f;
+  --action-wash: #ececea;
 }
 
 @theme inline {
@@ -26,6 +35,9 @@
   --color-redact: var(--redact);
   --color-safe: var(--safe);
   --color-alert: var(--alert);
+  --color-action: var(--action);
+  --color-action-hover: var(--action-hover);
+  --color-action-wash: var(--action-wash);
 
   --font-display: var(--font-newsreader);
   --font-sans: var(--font-plex-sans);

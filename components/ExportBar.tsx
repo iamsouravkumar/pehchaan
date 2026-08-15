@@ -122,7 +122,7 @@ export default function ExportBar({
           type="button"
           onClick={save}
           disabled={saving}
-          className="bg-stamp rounded px-4 py-2 text-[15px] font-medium text-white disabled:opacity-60"
+          className="bg-action hover:bg-action-hover rounded px-4 py-2 text-[15px] font-medium text-white disabled:opacity-60"
         >
           {saving ? 'Saving…' : 'Save redacted copy'}
         </button>

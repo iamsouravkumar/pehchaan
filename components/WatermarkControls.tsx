@@ -38,7 +38,7 @@ export default function WatermarkControls({
               aria-pressed={purpose === preset.name}
               className={`rounded-full border px-2.5 py-1 font-mono text-xs ${
                 purpose === preset.name
-                  ? 'border-stamp bg-stamp-wash text-stamp'
+                  ? 'border-action bg-action-wash text-action'
                   : 'border-rule text-ink-soft'
               }`}
             >

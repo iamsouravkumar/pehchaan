@@ -375,7 +375,7 @@ export default function Page() {
               type="button"
               onClick={() => setStep(step + 1)}
               disabled={blocked}
-              className="bg-stamp min-h-11 flex-1 rounded px-4 py-2 text-[15px] font-medium text-white disabled:opacity-40 md:flex-none"
+              className="bg-action hover:bg-action-hover min-h-11 flex-1 rounded px-4 py-2 text-[15px] font-medium text-white disabled:opacity-40 md:flex-none"
             >
               Continue
             </button>
