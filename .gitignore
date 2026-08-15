@@ -1,0 +1,10 @@
+node_modules/
+.next/
+.claude/
+out/
+next-env.d.ts
+tsconfig.tsbuildinfo
+*.log
+public/pdf/
+public/tesseract/
+public/mediapipe/

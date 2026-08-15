@@ -1,0 +1,97 @@
+@import 'tailwindcss';
+
+/* Design tokens — DESIGN.md §3. Light only in v1; dark is P2 and stays a token
+   swap because every colour below is a custom property from day one. */
+:root {
+  --paper: #f5f5f2;
+  --surface: #ffffff;
+  --ink: #17181b;
+  --ink-soft: #5c6068;
+  --rule: #ddddd7;
+  --stamp: #4b3c8f;
+  --stamp-wash: #edeaf6;
+  --redact: #0a0a0b;
+  --safe: #2f6f55;
+  --alert: #a63a2e;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-rule: var(--rule);
+  --color-stamp: var(--stamp);
+  --color-stamp-wash: var(--stamp-wash);
+  --color-redact: var(--redact);
+  --color-safe: var(--safe);
+  --color-alert: var(--alert);
+
+  --font-display: var(--font-newsreader);
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Step transitions cross-fade, 180ms, and nothing else moves (DESIGN.md §8). */
+.step-enter {
+  animation: step-enter 180ms ease-out both;
+}
+@keyframes step-enter {
+  from {
+    opacity: 0;
+  }
+}
+
+/* The wordmark's bar sits over HCHA and slides off on first load, 400ms
+   (DESIGN.md §8). Percentages, not ch units — the display face is proportional,
+   so a character-width offset drifts at every size. */
+.wordmark-bar {
+  top: 0.08em;
+  left: 21%;
+  width: 53%;
+  height: 0.8em;
+  animation: wordmark-reveal 400ms ease-out 500ms both;
+}
+@keyframes wordmark-reveal {
+  from {
+    transform: none;
+    opacity: 1;
+  }
+  to {
+    transform: translateX(115%);
+    opacity: 0;
+  }
+}
+
+/* Box selection, 120ms (DESIGN.md §8). Colour and fill only — a box that
+   changed size on selection would look like it moved under the user's finger. */
+.box {
+  transition:
+    border-color 120ms ease-out,
+    background-color 120ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step-enter,
+  .box {
+    animation: none;
+    transition: none;
+  }
+  /* The word renders revealed rather than animating to it. */
+  .wordmark-bar {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* DESIGN.md §10 — visible focus on every interactive element. */
+:focus-visible {
+  outline: 2px solid var(--stamp);
+  outline-offset: 2px;
+}

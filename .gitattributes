@@ -1,0 +1,7 @@
+# Normalise line endings in the repository. Authored on Windows, so without
+# this every file lands with CRLF and anyone on Linux or macOS sees a whole-file
+# diff on first checkout.
+* text=auto eol=lf
+
+# Binary: the face-detection model is not published to npm and is vendored here.
+*.tflite binary
