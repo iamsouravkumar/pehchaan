@@ -1,387 +1,204 @@
-'use client';
-
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import DropZone from '@/components/DropZone';
-import DocumentCanvas from '@/components/DocumentCanvas';
-import BoxOverlay from '@/components/BoxOverlay';
-import DetectionPanel from '@/components/DetectionPanel';
-import WatermarkControls from '@/components/WatermarkControls';
-import ExportBar from '@/components/ExportBar';
-import StepIndicator from '@/components/StepIndicator';
-import PageNav from '@/components/PageNav';
-import PrivacyBadge from '@/components/PrivacyBadge';
-import ZoomControl from '@/components/ZoomControl';
+import Link from 'next/link';
 import Wordmark from '@/components/Wordmark';
-import { STEPS, furthestStep } from '@/lib/steps';
-import { openDocument, type Doc } from '@/lib/document';
-import { NormaliseError, type NormalisedImage } from '@/lib/image/normalise';
-import { renderDocument } from '@/lib/redact/apply';
-import { prewarm, readWords, type OcrStage } from '@/lib/ocr/worker';
-import { detectAll } from '@/lib/detect';
-import { detectFaces } from '@/lib/detect/face';
-import { detectCodes } from '@/lib/detect/qr';
-import { stampText } from '@/lib/redact/watermark';
-import { PRESETS, applyPreset, revealedIn, type Preset } from '@/lib/purpose';
-import { spoken, type Box } from '@/lib/boxes';
+import SampleCard from '@/components/landing/SampleCard';
+import ProofStrip from '@/components/landing/ProofStrip';
+import Reveal from '@/components/landing/Reveal';
 
-export default function Page() {
-  const [step, setStep] = useState(0);
-  const [doc, setDoc] = useState<Doc | null>(null);
-  const [pageIndex, setPageIndex] = useState(0);
-  const [page, setPage] = useState<NormalisedImage | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+/**
+ * The landing page (LANDING.md).
+ *
+ * The visitor arrives suspicious — they have been told before that something was
+ * private and found out otherwise. The page has one job: make the claim feel
+ * provable rather than promised, before they upload anything. Hence a card that
+ * redacts itself, a counter reading real numbers, and mechanisms rather than
+ * adjectives.
+ *
+ * A server component with no client JavaScript of its own. The tool lives at
+ * /tool so its several megabytes of WASM never load for someone who is only
+ * reading (LANDING.md §6).
+ */
 
-  // Boxes belong to a page, not to the document — page 3's address block is not
-  // page 1's.
-  const [boxesByPage, setBoxesByPage] = useState<Record<number, Box[]>>({});
-  const [selected, setSelected] = useState<string | null>(null);
-  const [drawing, setDrawing] = useState(true);
-  const [zoom, setZoom] = useState(1);
+const STEPS = [
+  {
+    n: '01',
+    title: 'Add your document',
+    body: 'Photo or PDF. Aadhaar, PAN, marksheet, bill, anything.',
+  },
+  {
+    n: '02',
+    title: "Review what's hidden",
+    body: 'It finds the sensitive fields. You check them, and box anything it missed.',
+  },
+  {
+    n: '03',
+    title: 'Add a purpose',
+    body: "Stamp what the copy is for, so it can't be quietly reused.",
+  },
+  {
+    n: '04',
+    title: 'Save',
+    body: 'The hidden parts are gone from the pixels, not covered by a removable layer.',
+  },
+];
 
-  // On by default with a preset filled in: users who want a stamp get one
-  // without thinking, and turning it off is one click (PRD §12).
-  const [stampOn, setStampOn] = useState(true);
-  const [purpose, setPurpose] = useState<string>(PRESETS[0].name);
-  // The text is pre-filled, but the *policy* only applies once the user picks a
-  // chip. A preset un-hides fields, and nothing may un-hide a field on its own.
-  const [preset, setPreset] = useState<Preset | null>(null);
-  // Pages are detected lazily, so a preset chosen on page 1 has to still be
-  // there when page 3 is read. A ref, because it must not re-trigger OCR.
-  const activePreset = useRef<Preset | null>(null);
-  activePreset.current = preset;
+const PROOFS = [
+  {
+    title: "There's no server to send it to.",
+    body: 'Pehchaan is a static site. There is no backend, no API, no database. Even if the code wanted to upload your document, there is nowhere for it to go.',
+  },
+  {
+    title: 'The engine runs in your browser.',
+    body: 'Text recognition happens locally in WebAssembly. The engine and its language data are served from this site, not fetched from anyone else’s.',
+  },
+  {
+    title: 'Turn off your wifi and it still works.',
+    body: 'The strongest proof available. Load the page, disconnect, redact a document. Nothing changes.',
+  },
+];
 
-  const [ocrStage, setOcrStage] = useState<OcrStage>('idle');
-  // Pages the user has confirmed they checked by hand, after detection found
-  // nothing. Per page, because page 2 finding nothing says nothing about page 1.
-  const [dismissed, setDismissed] = useState<Set<number>>(new Set());
-
-  // Load the engine before a file is picked, so the wait isn't mid-flow.
-  useEffect(prewarm, []);
-
-  const current = STEPS[step];
-  const limit = furthestStep(!!doc);
-  const stamp = stampOn ? stampText(purpose) : '';
-  const boxes = useMemo(() => boxesByPage[pageIndex] ?? [], [boxesByPage, pageIndex]);
-
-  const setBoxes = useCallback(
-    (update: (boxes: Box[]) => Box[]) =>
-      setBoxesByPage((all) => ({ ...all, [pageIndex]: update(all[pageIndex] ?? []) })),
-    [pageIndex],
-  );
-
-  // Pages are rasterised on demand, so opening one is async even for images.
-  useEffect(() => {
-    if (!doc) return;
-    let live = true;
-    setPage(null);
-    doc
-      .page(pageIndex)
-      .then((p) => live && setPage(p))
-      .catch((e) => live && setError(e instanceof Error ? e.message : "Couldn't open that page."));
-    return () => {
-      live = false;
-    };
-  }, [doc, pageIndex]);
-
-  // Read each page as it opens, then turn the words into boxes.
-  useEffect(() => {
-    if (!page) return;
-    let live = true;
-    setOcrStage('reading');
-    // Faces and text are found by two engines that share nothing, so they run
-    // together. Either can fail on its own without taking the other's findings
-    // down with it — detectFaces already resolves to [] rather than throwing.
-    const reading = readWords(page.work).catch(() => {
-      if (live) setOcrStage('unavailable');
-      return [];
-    });
-
-    Promise.all([reading, detectFaces(page.work), detectCodes(page.work)])
-      .then(([found, faces, codes]) => {
-        if (!live) return;
-        setOcrStage((stage) => (stage === 'unavailable' ? stage : 'ready'));
-        const candidates = detectAll(found, page.work.width, page.work.height, [...faces, ...codes]);
-        // A preset chosen earlier applies to pages opened later, or page 3 would
-        // silently keep hiding fields the user already said this recipient needs.
-        const detected = activePreset.current
-          ? applyPreset(candidates, activePreset.current)
-          : candidates;
-        // Only seed a page that has none. Re-running detection over a page the
-        // user has already edited would resurrect boxes they deleted.
-        setBoxesByPage((all) =>
-          all[pageIndex]?.length || !detected.length ? all : { ...all, [pageIndex]: detected },
-        );
-      });
-    return () => {
-      live = false;
-    };
-    // `pageIndex` is a dependency so a fast page flip can never drop one page's
-    // detections onto another.
-  }, [page, pageIndex]);
-
-  async function handleFile(file: File) {
-    setError(null);
-    setBusy(true);
-    try {
-      const opened = await openDocument(file);
-      setDoc(opened);
-      setPageIndex(0);
-      setBoxesByPage({});
-      setSelected(null);
-      setDismissed(new Set());
-      setDrawing(true);
-      setStep(1);
-    } catch (e) {
-      setDoc(null);
-      setError(
-        e instanceof NormaliseError ? e.message : "Couldn't read this file. Try a clearer photo.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  /** A preset sets the stamp text and the field policy, across every page. */
-  function choosePreset(chosen: Preset) {
-    setPurpose(chosen.name);
-    setPreset(chosen);
-    setBoxesByPage((all) =>
-      Object.fromEntries(
-        Object.entries(all).map(([i, list]) => [i, applyPreset(list, chosen)]),
-      ),
-    );
-  }
-
-  function reset() {
-    setDoc(null);
-    setPage(null);
-    setPageIndex(0);
-    setBoxesByPage({});
-    setSelected(null);
-    setDismissed(new Set());
-    setPreset(null);
-    setPurpose(PRESETS[0].name);
-    setError(null);
-    setStep(0);
-  }
-
-  // Live preview of the stamp as it's typed (DESIGN.md §5). Scoped to this step
-  // on purpose — recomputing it while boxes are being dragged would redraw the
-  // whole canvas on every pointer move.
-  const onPurpose = current.key === 'purpose';
-  const stamped = useMemo(
-    () => (page && onPurpose ? renderDocument(page.work, boxes, 1, stamp) : null),
-    [page, boxes, stamp, onPurpose],
-  );
-
-  // Detection is a starting point, never a guarantee. The wording says what was
-  // found and leaves the judgement with the reader (PRD §7).
-  const summary = useMemo(() => {
-    const found = boxes.filter((b) => b.source !== 'manual');
-    if (!found.length) return 'Nothing found automatically. Mark anything sensitive yourself.';
-    // Name what was found rather than counting it — "Found 3 fields" tells the
-    // reader nothing about whether their address is one of them.
-    const labels = [...new Set(found.map((b) => spoken(b.label)))];
-    const list =
-      labels.length > 1 ? `${labels.slice(0, -1).join(', ')} and ${labels.at(-1)}` : labels[0];
-    const unsure = found.filter((b) => b.source === 'suggested').length;
-    const parts = [`Found ${list}.`];
-    if (unsure)
-      parts.push(
-        `${unsure} of ${found.length > unsure ? 'these' : 'them'} ${unsure > 1 ? 'are guesses' : 'is a guess'} — check the dashed ${unsure > 1 ? 'boxes' : 'box'}.`,
-      );
-    parts.push('Check everything else yourself.');
-    return parts.join(' ');
-  }, [boxes]);
-
-  const markedPages = useMemo(
-    () =>
-      new Set(
-        Object.entries(boxesByPage)
-          .filter(([, list]) => list.length > 0)
-          .map(([i]) => Number(i)),
-      ),
-    [boxesByPage],
-  );
-
-  const loading = doc && !page && !error;
-
-  // Nothing found and nothing drawn — the user has to say they have looked
-  // before the wizard will move on. Drawing a box counts as looking, so the
-  // warning clears itself the moment they mark anything.
-  const blocked =
-    current.key === 'review' &&
-    ocrStage === 'ready' &&
-    boxes.length === 0 &&
-    !dismissed.has(pageIndex);
-
+export default function Landing() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-7 px-5 py-8">
-      <header className="flex items-center justify-between gap-4">
+    <main>
+      <header className="mx-auto flex max-w-5xl items-center justify-between px-5 py-6">
         <Wordmark />
-        <div className="flex items-center gap-4">
-          <PrivacyBadge />
-          {doc && (
-            <button
-              type="button"
-              onClick={reset}
-              className="text-ink-soft text-[15px] whitespace-nowrap underline underline-offset-4"
-            >
-              Start over
-            </button>
-          )}
-        </div>
+        <Link
+          href="/tool"
+          className="border-rule press rounded border px-3.5 py-2 text-[15px] whitespace-nowrap"
+        >
+          Open tool
+        </Link>
       </header>
 
-      <StepIndicator
-        steps={STEPS}
-        current={step}
-        onGo={(i) => i <= limit && !(blocked && i > step) && setStep(i)}
-      />
+      <section className="mx-auto grid max-w-5xl items-center gap-10 px-5 pt-10 pb-16 md:grid-cols-2 md:pt-16">
+        <div className="flex flex-col gap-6">
+          <h1 className="font-display text-[clamp(2.25rem,6vw,3.5rem)] leading-[1.08]">
+            {/* Two lines, staggered — the second half is the turn. */}
+            <span className="rise-in block" style={{ animationDelay: '0.15s' }}>
+              Share your document.
+            </span>
+            <span className="rise-in block" style={{ animationDelay: '0.24s' }}>
+              Not your identity.
+            </span>
+          </h1>
 
-      {/* Keyed on the step so the cross-fade runs on every change (DESIGN.md §8). */}
-      <div key={current.key} className="step-enter flex flex-col gap-6">
-        <div>
-          <h1 className="font-display text-[28px] leading-[34px]">{current.title}</h1>
-          <p className="text-ink-soft text-[15px]">{current.subtitle}</p>
-        </div>
-
-        {current.key === 'add' &&
-          (busy ? (
-            <p className="text-ink-soft text-center">Reading the document…</p>
-          ) : (
-            <DropZone onFile={handleFile} error={error} />
-          ))}
-
-        {current.key !== 'add' && loading && (
-          <p className="text-ink-soft">Reading page {pageIndex + 1}…</p>
-        )}
-
-        {current.key === 'review' && page && doc && (
-          <>
-            {doc.pageCount > 1 && (
-              <PageNav
-                pageIndex={pageIndex}
-                pageCount={doc.pageCount}
-                onGo={(i) => {
-                  setSelected(null);
-                  setPageIndex(i);
-                }}
-                markedPages={markedPages}
-              />
-            )}
-            {ocrStage === 'reading' && (
-              <p className="text-ink-soft text-[15px]">Looking for sensitive fields…</p>
-            )}
-            {ocrStage === 'unavailable' && (
-              <p className="text-ink-soft text-[15px]">
-                Automatic detection isn&apos;t available. You can still mark and hide anything by
-                hand.
-              </p>
-            )}
-            {ocrStage === 'ready' && boxes.length > 0 && (
-              <p className="text-ink-soft text-[15px]">{summary}</p>
-            )}
-
-            {/* The one place the interface is deliberately obstructive. Silence
-                here would let someone export an unredacted Aadhaar believing it
-                was safe, which is the worst failure this product has
-                (PRD §12, DESIGN.md §7). */}
-            {blocked && (
-              <div
-                role="alert"
-                className="border-alert bg-alert/8 flex flex-col gap-3 rounded-lg border-2 p-4"
-              >
-                <p className="text-alert text-[17px] font-medium">
-                  No sensitive fields found on this page.
-                </p>
-                <p className="text-ink text-[15px]">
-                  That doesn&apos;t mean there are none. Check this document yourself and box
-                  anything you don&apos;t want to share before saving.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setDismissed((all) => new Set(all).add(pageIndex))}
-                  className="border-alert text-alert self-start rounded border px-3 py-2 text-[15px] font-medium"
-                >
-                  I&apos;ve checked this page
-                </button>
-              </div>
-            )}
-
-            <ZoomControl zoom={zoom} setZoom={setZoom} />
-
-            <div className="flex flex-col items-start gap-5 md:flex-row">
-              <DocumentCanvas canvas={page.work} zoom={zoom}>
-                <BoxOverlay
-                  boxes={boxes}
-                  setBoxes={setBoxes}
-                  selected={selected}
-                  setSelected={setSelected}
-                  width={page.work.width}
-                  height={page.work.height}
-                  drawing={drawing}
-                />
-              </DocumentCanvas>
-              <DetectionPanel
-                boxes={boxes}
-                setBoxes={setBoxes}
-                selected={selected}
-                setSelected={setSelected}
-                drawing={drawing}
-                setDrawing={setDrawing}
-              />
-            </div>
-          </>
-        )}
-
-        {current.key === 'purpose' && stamped && (
-          <div className="flex flex-col items-start gap-5 md:flex-row">
-            <DocumentCanvas canvas={stamped} />
-            <WatermarkControls
-              on={stampOn}
-              setOn={setStampOn}
-              purpose={purpose}
-              setPurpose={setPurpose}
-              onPreset={choosePreset}
-              revealed={preset ? { preset, labels: revealedIn(boxes, preset) } : null}
-            />
-          </div>
-        )}
-
-        {current.key === 'save' && page && doc && (
-          <ExportBar
-            doc={doc}
-            page={page}
-            pageIndex={pageIndex}
-            boxesByPage={boxesByPage}
-            stamp={stamp}
-          />
-        )}
-      </div>
-
-      {step > 0 && (
-        <div className="border-rule bg-paper sticky bottom-0 z-10 flex items-center gap-3 border-t py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:static md:border-0 md:py-0 md:pt-2">
-          <button
-            type="button"
-            onClick={() => setStep(step - 1)}
-            className="border-rule min-h-11 rounded border px-4 py-2 text-[15px]"
+          <p
+            className="text-ink-soft rise-in max-w-prose text-[17px] leading-relaxed"
+            style={{ animationDelay: '0.33s' }}
           >
-            Back
-          </button>
-          {step < STEPS.length - 1 && (
-            <button
-              type="button"
-              onClick={() => setStep(step + 1)}
-              disabled={blocked}
-              className="bg-stamp min-h-11 flex-1 rounded px-4 py-2 text-[15px] font-medium text-white disabled:opacity-40 md:flex-none"
+            Hide the parts they don&apos;t need — the Aadhaar number, the address, the photo — and
+            stamp what it&apos;s for. Runs entirely in your browser. Your document never leaves your
+            device.
+          </p>
+
+          <div
+            className="rise-in flex flex-col items-start gap-3"
+            style={{ animationDelay: '0.42s' }}
+          >
+            <Link
+              href="/tool"
+              className="bg-stamp press rounded px-5 py-3 text-[17px] font-medium text-white"
             >
-              Continue
-            </button>
-          )}
+              Open Pehchaan
+            </Link>
+            <p className="text-ink-soft font-mono text-xs">
+              no account · nothing uploaded · works offline
+            </p>
+          </div>
         </div>
-      )}
+
+        <div className="rise-in flex justify-center md:justify-end" style={{ animationDelay: '0.51s' }}>
+          <SampleCard />
+        </div>
+      </section>
+
+      <ProofStrip />
+
+      <Reveal className="mx-auto max-w-5xl px-5 py-16">
+        <h2 className="font-display mb-8 text-[28px]">How it works</h2>
+        <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {STEPS.map((step) => (
+            <li
+              key={step.n}
+              className="border-rule step-card bg-surface flex flex-col gap-2 rounded-lg border p-4"
+            >
+              <span className="text-stamp font-mono text-xs">{step.n}</span>
+              <h3 className="text-[17px] font-medium">{step.title}</h3>
+              <p className="text-ink-soft text-[15px] leading-relaxed">{step.body}</p>
+            </li>
+          ))}
+        </ol>
+      </Reveal>
+
+      <Reveal className="mx-auto max-w-5xl px-5 py-16">
+        <h2 className="font-display mb-2 text-[28px]">Why nothing is uploaded</h2>
+        <p className="text-ink-soft mb-8 text-[15px]">The mechanism, not the marketing.</p>
+        <div className="grid gap-8 md:grid-cols-3">
+          {PROOFS.map((proof) => (
+            <div key={proof.title} className="flex flex-col gap-2">
+              <h3 className="text-[17px] font-medium">{proof.title}</h3>
+              <p className="text-ink-soft text-[15px] leading-relaxed">{proof.body}</p>
+            </div>
+          ))}
+        </div>
+        <p className="text-ink-soft mt-8 text-[15px]">
+          The code is open —{' '}
+          <a
+            href="https://github.com/iamsouravkumar/pehchaan"
+            className="text-stamp underline underline-offset-4"
+          >
+            read it yourself
+          </a>
+          .
+        </p>
+      </Reveal>
+
+      <Reveal className="mx-auto max-w-5xl px-5 py-16">
+        <h2 className="font-display mb-8 text-[28px]">What it handles</h2>
+        <div className="grid gap-8 md:grid-cols-2">
+          <div className="flex flex-col gap-2">
+            <h3 className="font-mono text-xs tracking-wide uppercase">Detected automatically</h3>
+            <p className="text-[15px] leading-relaxed">
+              Aadhaar — number, date of birth, address, photo, QR code. PAN — number, date of birth,
+              photo.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <h3 className="text-ink-soft font-mono text-xs tracking-wide uppercase">
+              Everything else, your call
+            </h3>
+            <p className="text-[15px] leading-relaxed">
+              Marksheets, certificates, bills, agreements, offer letters. Common patterns like dates
+              and addresses are found automatically; anything else, you box it yourself in two
+              seconds.
+            </p>
+          </div>
+        </div>
+      </Reveal>
+
+      <Reveal className="border-rule border-t">
+        <div className="mx-auto flex max-w-5xl flex-col items-center gap-6 px-5 py-20 text-center">
+          <p className="font-display text-[clamp(1.75rem,5vw,2.75rem)] leading-[1.1]">
+            Share your document.
+            <br />
+            Not your identity.
+          </p>
+          <Link
+            href="/tool"
+            className="bg-stamp press rounded px-5 py-3 text-[17px] font-medium text-white"
+          >
+            Open Pehchaan
+          </Link>
+        </div>
+      </Reveal>
+
+      <footer className="border-rule border-t">
+        <div className="text-ink-soft mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-5 py-6 font-mono text-xs">
+          <span>Pehchaan · built for CodeStorm 2026</span>
+          <a href="https://github.com/iamsouravkumar/pehchaan" className="underline underline-offset-4">
+            Source
+          </a>
+        </div>
+      </footer>
     </main>
   );
 }

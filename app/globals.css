@@ -77,9 +77,109 @@ body {
     background-color 120ms ease-out;
 }
 
+/* ---------------------------------------------------------------------------
+   Landing page motion (LANDING.md §5).
+
+   The spec names Framer Motion. This is CSS instead, with the same easing and
+   the same durations — partly because a 50KB dependency for eight keyframes is
+   hard to justify in a bundle whose selling point is what isn't in it, and
+   partly because §6 requires the page to render with JavaScript disabled.
+   Framer's initial states are inline styles applied by JS: without it the hero
+   would render at opacity 0. CSS animations resolve to their end state whether
+   or not any script runs.
+   --------------------------------------------------------------------------- */
+:root {
+  /* ease-out-expo: calm and decisive. Nothing springs or overshoots. */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Hero load sequence: wordmark, headline, subhead, CTA, card — under 1.2s. */
+.rise-in {
+  animation: rise-in 500ms var(--ease) both;
+}
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+.reveal-hidden {
+  opacity: 0;
+}
+.reveal-in {
+  animation: rise-in 500ms var(--ease) both;
+}
+
+/* The self-redacting card. One timeline: bars sweep, stamp presses, hold,
+   reverse, pause, repeat. 11s round trip. */
+.redact-sweep {
+  transform: scaleX(0);
+  animation: redact-sweep 11s var(--ease) infinite;
+}
+@keyframes redact-sweep {
+  0%,
+  8% {
+    transform: scaleX(0);
+  }
+  /* 320ms sweep in */
+  11%,
+  55% {
+    transform: scaleX(1);
+  }
+  /* held, then withdrawn the way it arrived */
+  58%,
+  100% {
+    transform: scaleX(0);
+  }
+}
+
+/* A stamp presses down. This is the one place a slight overshoot is correct. */
+.stamp-press {
+  opacity: 0;
+  animation: stamp-press 11s var(--ease) infinite;
+}
+@keyframes stamp-press {
+  0%,
+  20% {
+    opacity: 0;
+    transform: rotate(-3deg) scale(1.06);
+  }
+  24%,
+  55% {
+    opacity: 1;
+    transform: rotate(-3deg) scale(1);
+  }
+  60%,
+  100% {
+    opacity: 0;
+    transform: rotate(-3deg) scale(1);
+  }
+}
+
+/* Buttons settle rather than bounce. */
+.press {
+  transition: transform 140ms var(--ease);
+}
+.press:hover {
+  transform: scale(1.015);
+}
+.press:active {
+  transform: scale(0.985);
+}
+
+.step-card {
+  transition: border-color 180ms var(--ease);
+}
+.step-card:hover {
+  border-color: var(--stamp);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .step-enter,
-  .box {
+  .box,
+  .press,
+  .step-card {
     animation: none;
     transition: none;
   }
@@ -87,6 +187,24 @@ body {
   .wordmark-bar {
     animation: none;
     opacity: 0;
+  }
+  /* The card holds its redacted state instead of looping: the finished result
+     is the point, and the loop is only how it gets explained. */
+  .rise-in,
+  .reveal-in,
+  .reveal-hidden {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .redact-sweep {
+    animation: none;
+    transform: scaleX(1);
+  }
+  .stamp-press {
+    animation: none;
+    opacity: 1;
+    transform: rotate(-3deg);
   }
 }
 
