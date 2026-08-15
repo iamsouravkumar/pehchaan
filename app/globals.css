@@ -187,10 +187,25 @@ body {
   border-color: var(--stamp);
 }
 
+/* The drop zone gives under a press. Barely — it is a large surface, and a big
+   target that jumps reads as unstable rather than responsive. Colour is eased
+   here too: Tailwind silently drops `transition-[a,b,c]` arbitrary values, so
+   the utility that was meant to do this generated nothing at all. */
+.press-soft {
+  transition:
+    transform 140ms var(--ease),
+    background-color 200ms var(--ease),
+    border-color 200ms var(--ease);
+}
+.press-soft:active {
+  transform: scale(0.995);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .step-enter,
   .box,
   .press,
+  .press-soft,
   .step-card {
     animation: none;
     transition: none;
@@ -224,4 +239,32 @@ body {
 :focus-visible {
   outline: 2px solid var(--stamp);
   outline-offset: 2px;
+}
+
+/* Tailwind v4's preflight sets `cursor: default` on buttons, following the CSS
+   spec rather than the convention every user has learned. Put the pointer back
+   on everything clickable — including labels, so the text beside a checkbox
+   behaves like the control it toggles.
+
+   Text fields are deliberately absent: an I-beam tells you it accepts typing.
+   Elements that set their own cursor inline — the box overlay's move and resize
+   handles — win over this rule, which is what we want. */
+button,
+[role='button'],
+label,
+select,
+summary,
+a[href],
+input[type='checkbox'],
+input[type='radio'],
+input[type='file'] {
+  cursor: pointer;
+}
+
+/* A disabled control should say so before it is clicked, not after. */
+button:disabled,
+select:disabled,
+input:disabled,
+label:has(input:disabled) {
+  cursor: not-allowed;
 }

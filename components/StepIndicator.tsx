@@ -29,7 +29,7 @@ export default function StepIndicator({
                 onClick={() => onGo(i)}
                 disabled={i > current}
                 aria-current={state === 'current' ? 'step' : undefined}
-                className="flex min-h-11 w-full flex-col justify-center gap-1.5 text-left disabled:cursor-default"
+                className="flex min-h-11 w-full flex-col justify-center gap-1.5 text-left"
               >
                 <span
                   className={`h-1.5 w-full rounded-sm ${

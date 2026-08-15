@@ -32,13 +32,17 @@ export default function DropZone({
           setOver(false);
           take(e.dataTransfer.files);
         }}
-        className={`flex w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed px-8 py-16 transition-colors ${
-          over ? 'border-stamp bg-stamp-wash' : 'border-rule bg-surface'
+        className={`press-soft flex w-full cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed px-8 py-16 ${
+          // Dragging a file over it is a stronger signal than hovering, so it
+          // gets the accent; hover only warms the surface and firms the edge.
+          over
+            ? 'border-action bg-action-wash'
+            : 'border-rule bg-surface hover:border-ink-soft hover:bg-action-wash'
         }`}
       >
         <span className="font-display text-2xl">Add your document</span>
         <span className="text-ink-soft text-[15px]">
-          Drop a photo here, or click to choose one
+          {over ? 'Drop it here' : 'Drop a photo here, or click to choose one'}
         </span>
       </button>
 
