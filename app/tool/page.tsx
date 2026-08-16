@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import DropZone from '@/components/DropZone';
 import DocumentCanvas from '@/components/DocumentCanvas';
 import BoxOverlay from '@/components/BoxOverlay';
@@ -55,6 +56,8 @@ export default function Page() {
   // Pages the user has confirmed they checked by hand, after detection found
   // nothing. Per page, because page 2 finding nothing says nothing about page 1.
   const [dismissed, setDismissed] = useState<Set<number>>(new Set());
+  // Set when the wordmark is clicked with a document open.
+  const [leaving, setLeaving] = useState(false);
 
   // Load the engine before a file is picked, so the wait isn't mid-flow.
   useEffect(prewarm, []);
@@ -224,7 +227,18 @@ export default function Page() {
   return (
     <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-7 px-5 py-8">
       <header className="flex items-center justify-between gap-4">
-        <Wordmark href="/" />
+        <Wordmark
+          href="/"
+          onNavigate={(e) => {
+            // Leaving throws the document away, because nothing about it was
+            // ever stored. That is the promise working as intended, and also
+            // the one click that can undo an afternoon of boxing, so it asks.
+            if (doc) {
+              e.preventDefault();
+              setLeaving(true);
+            }
+          }}
+        />
         <div className="flex items-center gap-4">
           <PrivacyBadge />
           {doc && (
@@ -238,6 +252,35 @@ export default function Page() {
           )}
         </div>
       </header>
+
+      {leaving && (
+        <div
+          role="alertdialog"
+          aria-label="Leave the tool"
+          className="border-rule bg-surface flex flex-wrap items-center gap-3 rounded-lg border p-4"
+        >
+          <p className="text-[15px]">
+            Leaving discards this document. It was never stored anywhere, so there is nothing to
+            come back to.
+          </p>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setLeaving(false)}
+              autoFocus
+              className="bg-action hover:bg-action-hover text-ink min-h-11 rounded px-4 py-2 text-[15px] font-medium"
+            >
+              Stay here
+            </button>
+            <Link
+              href="/"
+              className="border-rule text-ink-soft flex min-h-11 items-center rounded border px-4 text-[15px]"
+            >
+              Leave anyway
+            </Link>
+          </div>
+        </div>
+      )}
 
       <StepIndicator
         steps={STEPS}

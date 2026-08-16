@@ -11,7 +11,14 @@ import Link from 'next/link';
  * moves, never a text swap, so the accessible name is "PEHCHAAN" at every
  * frame, and a reader with reduced motion sees the finished state immediately.
  */
-export default function Wordmark({ href }: { href?: string }) {
+export default function Wordmark({
+  href,
+  onNavigate,
+}: {
+  href?: string;
+  /** Called before following the link. Prevent the event to stay put. */
+  onNavigate?: (event: React.MouseEvent<HTMLAnchorElement>) => void;
+}) {
   const word = (
     <span className="font-display relative inline-block text-2xl leading-none tracking-[0.01em]">
       PEHCHAAN
@@ -25,7 +32,7 @@ export default function Wordmark({ href }: { href?: string }) {
   // wordmark already is the page, and a link to itself is a dead end that
   // reads as one more thing to try.
   return href ? (
-    <Link href={href} aria-label="Pehchaan home" className="inline-block">
+    <Link href={href} aria-label="Pehchaan home" className="inline-block" onClick={onNavigate}>
       {word}
     </Link>
   ) : (
