@@ -224,7 +224,7 @@ export default function Page() {
   return (
     <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-7 px-5 py-8">
       <header className="flex items-center justify-between gap-4">
-        <Wordmark />
+        <Wordmark href="/" />
         <div className="flex items-center gap-4">
           <PrivacyBadge />
           {doc && (
