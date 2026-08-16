@@ -15,7 +15,11 @@
  * after one online run, which is exactly how the demo is performed anyway.
  */
 
-const CACHE = 'pehchaan-v2';
+// Bumped on any release that changes behaviour. Assets are served cache-first
+// under this key, so a returning visitor keeps whatever was stored until the
+// name changes: a stale bundle on a page whose whole job is to be trusted.
+// Activate deletes every other key, so one bump gives everyone a clean slate.
+const CACHE = 'pehchaan-v3';
 
 self.addEventListener('install', (event) => {
   // The shell, so a cold offline load has something to open.
