@@ -62,7 +62,9 @@ export default function DetectionPanel({
                 checked={box.enabled}
                 onChange={(e) => patch(box.id, { enabled: e.target.checked })}
                 aria-label={`Hide ${box.label}`}
-                className="h-5 w-5"
+                // 24px is the smallest a control may be under WCAG 2.5.8, and
+                // this one decides whether a field is hidden at all.
+                className="h-6 w-6 shrink-0"
               />
               <select
                 value={box.label}
@@ -73,7 +75,7 @@ export default function DetectionPanel({
                     style: allowsBlur(label) ? box.style : 'block',
                   });
                 }}
-                className="border-rule flex-1 rounded border bg-white px-1 py-1 font-mono text-xs"
+                className="border-rule min-h-9 flex-1 rounded border bg-white px-1 py-1 font-mono text-xs"
               >
                 {LABELS.map((l) => (
                   <option key={l}>{l}</option>
@@ -93,11 +95,14 @@ export default function DetectionPanel({
               </button>
             </div>
 
-            <div className="flex items-center gap-3 pl-6">
+            <div className="flex items-center gap-2 pl-6">
+              {/* The label is the target, not the dot: a 13px radio is a
+                  fingernail on a phone, and the word beside it toggles the same
+                  control for free. */}
               {(['block', 'blur'] as const).map((style) => (
                 <label
                   key={style}
-                  className={`font-mono text-xs ${
+                  className={`flex min-h-9 items-center gap-1.5 rounded px-2 font-mono text-xs ${
                     style === 'blur' && !allowsBlur(box.label) ? 'text-ink-soft opacity-40' : ''
                   }`}
                 >
@@ -107,7 +112,7 @@ export default function DetectionPanel({
                     checked={box.style === style}
                     disabled={style === 'blur' && !allowsBlur(box.label)}
                     onChange={() => patch(box.id, { style })}
-                    className="mr-1"
+                    className="h-4 w-4"
                   />
                   {style}
                 </label>
