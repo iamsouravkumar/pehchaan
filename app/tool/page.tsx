@@ -32,7 +32,7 @@ export default function Page() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // Boxes belong to a page, not to the document — page 3's address block is not
+  // Boxes belong to a page, not to the document; page 3's address block is not
   // page 1's.
   const [boxesByPage, setBoxesByPage] = useState<Record<number, Box[]>>({});
   const [selected, setSelected] = useState<string | null>(null);
@@ -66,7 +66,10 @@ export default function Page() {
 
   const setBoxes = useCallback(
     (update: (boxes: Box[]) => Box[]) =>
-      setBoxesByPage((all) => ({ ...all, [pageIndex]: update(all[pageIndex] ?? []) })),
+      setBoxesByPage((all) => ({
+        ...all,
+        [pageIndex]: update(all[pageIndex] ?? []),
+      })),
     [pageIndex],
   );
 
@@ -91,17 +94,20 @@ export default function Page() {
     setOcrStage('reading');
     // Faces and text are found by two engines that share nothing, so they run
     // together. Either can fail on its own without taking the other's findings
-    // down with it — detectFaces already resolves to [] rather than throwing.
+    // down with it; detectFaces already resolves to [] rather than throwing.
     const reading = readWords(page.work).catch(() => {
       if (live) setOcrStage('unavailable');
       return [];
     });
 
-    Promise.all([reading, detectFaces(page.work), detectCodes(page.work)])
-      .then(([found, faces, codes]) => {
+    Promise.all([reading, detectFaces(page.work), detectCodes(page.work)]).then(
+      ([found, faces, codes]) => {
         if (!live) return;
         setOcrStage((stage) => (stage === 'unavailable' ? stage : 'ready'));
-        const candidates = detectAll(found, page.work.width, page.work.height, [...faces, ...codes]);
+        const candidates = detectAll(found, page.work.width, page.work.height, [
+          ...faces,
+          ...codes,
+        ]);
         // A preset chosen earlier applies to pages opened later, or page 3 would
         // silently keep hiding fields the user already said this recipient needs.
         const detected = activePreset.current
@@ -112,7 +118,8 @@ export default function Page() {
         setBoxesByPage((all) =>
           all[pageIndex]?.length || !detected.length ? all : { ...all, [pageIndex]: detected },
         );
-      });
+      },
+    );
     return () => {
       live = false;
     };
@@ -147,9 +154,7 @@ export default function Page() {
     setPurpose(chosen.name);
     setPreset(chosen);
     setBoxesByPage((all) =>
-      Object.fromEntries(
-        Object.entries(all).map(([i, list]) => [i, applyPreset(list, chosen)]),
-      ),
+      Object.fromEntries(Object.entries(all).map(([i, list]) => [i, applyPreset(list, chosen)])),
     );
   }
 
@@ -167,7 +172,7 @@ export default function Page() {
   }
 
   // Live preview of the stamp as it's typed (DESIGN.md §5). Scoped to this step
-  // on purpose — recomputing it while boxes are being dragged would redraw the
+  // on purpose: recomputing it while boxes are being dragged would redraw the
   // whole canvas on every pointer move.
   const onPurpose = current.key === 'purpose';
   const stamped = useMemo(
@@ -180,7 +185,7 @@ export default function Page() {
   const summary = useMemo(() => {
     const found = boxes.filter((b) => b.source !== 'manual');
     if (!found.length) return 'Nothing found automatically. Mark anything sensitive yourself.';
-    // Name what was found rather than counting it — "Found 3 fields" tells the
+    // Name what was found rather than counting it; "Found 3 fields" tells the
     // reader nothing about whether their address is one of them.
     const labels = [...new Set(found.map((b) => spoken(b.label)))];
     const list =
@@ -189,7 +194,7 @@ export default function Page() {
     const parts = [`Found ${list}.`];
     if (unsure)
       parts.push(
-        `${unsure} of ${found.length > unsure ? 'these' : 'them'} ${unsure > 1 ? 'are guesses' : 'is a guess'} — check the dashed ${unsure > 1 ? 'boxes' : 'box'}.`,
+        `${unsure} of ${found.length > unsure ? 'these' : 'them'} ${unsure > 1 ? 'are guesses' : 'is a guess'}. Check the dashed ${unsure > 1 ? 'boxes' : 'box'}.`,
       );
     parts.push('Check everything else yourself.');
     return parts.join(' ');
@@ -207,7 +212,7 @@ export default function Page() {
 
   const loading = doc && !page && !error;
 
-  // Nothing found and nothing drawn — the user has to say they have looked
+  // Nothing found and nothing drawn: the user has to say they have looked
   // before the wizard will move on. Drawing a box counts as looking, so the
   // warning clears itself the moment they mark anything.
   const blocked =
@@ -375,7 +380,7 @@ export default function Page() {
               type="button"
               onClick={() => setStep(step + 1)}
               disabled={blocked}
-              className="bg-action hover:bg-action-hover min-h-11 flex-1 rounded px-4 py-2 text-[15px] font-medium text-white disabled:opacity-40 md:flex-none"
+              className="bg-action hover:bg-action-hover text-ink min-h-11 flex-1 rounded px-4 py-2 text-[15px] font-medium disabled:opacity-40 md:flex-none"
             >
               Continue
             </button>

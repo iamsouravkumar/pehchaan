@@ -3,13 +3,13 @@
  *
  * Tesseract carries hardcoded jsDelivr defaults for its worker, its WASM core
  * and its language data. We override all three (lib/ocr/worker.ts), so the
- * strings are dead code — but they sit in the bundle of a product whose entire
+ * strings are dead code, but they sit in the bundle of a product whose entire
  * claim is that there is nowhere for your document to go, and "it's unreachable,
  * trust me" is a worse answer than not having it there.
  *
  * Rewriting to a same-origin path means that if one of those defaults ever did
- * become live — a version bump changing an option name, a path we forget to set
- * — it fails loudly with a 404 from our own server instead of quietly fetching
+ * become live (a version bump changing an option name, a path we forget to set),
+ * it fails loudly with a 404 from our own server instead of quietly fetching
  * several megabytes from someone else's. The failure mode goes from invisible to
  * obvious, which is the whole point (TRD §4.1).
  */

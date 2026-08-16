@@ -2,12 +2,12 @@
  * The visible proof.
  *
  * The product's whole claim is that the document never leaves the device. That
- * claim is invisible — a user has to open DevTools to check it, and nobody
+ * claim is invisible: a user has to open DevTools to check it, and nobody
  * does. This counts what actually crossed the network and puts the number
  * on screen (TRD §7, DESIGN.md §7).
  *
- * What it counts is deliberate: requests to *other origins*. Our own assets —
- * the OCR engine, the WASM, the fonts — are fetched from this origin as the
+ * What it counts is deliberate: requests to *other origins*. Our own assets
+ * (the OCR engine, the WASM, the fonts) are fetched from this origin as the
  * user works, so a raw request count would climb past zero and mean nothing.
  * A request to somewhere else is the only event that could carry a document
  * away, and that is the number worth watching. If it is ever above zero,

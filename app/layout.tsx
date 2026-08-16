@@ -4,7 +4,7 @@ import './globals.css';
 import ServiceWorker from '@/components/ServiceWorker';
 
 // next/font downloads at build time and serves from our own origin.
-// Nothing is fetched from fonts.googleapis.com at runtime — TRD §1.
+// Nothing is fetched from fonts.googleapis.com at runtime (TRD §1).
 const newsreader = Newsreader({
   subsets: ['latin'],
   variable: '--font-newsreader',
@@ -24,17 +24,15 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Pehchaan — Share your document. Not your identity.',
+  title: 'Pehchaan: Share your document. Not your identity.',
   description:
-    "Hide the parts they don't need — the Aadhaar number, the address, the photo — and stamp what it's for. Runs entirely in your browser. Your document never leaves your device.",
+    "Hide the parts they don't need: the Aadhaar number, the address, the photo. Then stamp what it's for. Runs entirely in your browser. Your document never leaves your device.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body
-        className={`${newsreader.variable} ${plexSans.variable} ${plexMono.variable}`}
-      >
+      <body className={`${newsreader.variable} ${plexSans.variable} ${plexMono.variable}`}>
         {children}
         <ServiceWorker />
       </body>

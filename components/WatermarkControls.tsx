@@ -38,7 +38,7 @@ export default function WatermarkControls({
               aria-pressed={purpose === preset.name}
               className={`rounded-full border px-2.5 py-1 font-mono text-xs ${
                 purpose === preset.name
-                  ? 'border-action bg-action-wash text-action'
+                  ? 'border-action bg-action-wash text-action-ink'
                   : 'border-rule text-ink-soft'
               }`}
             >
@@ -67,7 +67,7 @@ export default function WatermarkControls({
           </p>
           <p className="text-ink-soft text-[13px]">{revealed.preset.note}</p>
           <p className="text-ink-soft text-[13px]">
-            Go back a step to change any of it — nothing here is fixed.
+            Go back a step to change any of it. Nothing here is fixed.
           </p>
         </div>
       )}
@@ -79,7 +79,7 @@ export default function WatermarkControls({
 
       {on ? (
         <p className="text-ink-soft text-[13px]">
-          Today&apos;s date is added automatically and can&apos;t be changed — a back-dated stamp
+          Today&apos;s date is added automatically and can&apos;t be changed; a back-dated stamp
           would be worth nothing.
           <span className="text-ink mt-1 block font-mono text-xs">{stampDate()}</span>
         </p>

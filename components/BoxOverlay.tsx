@@ -19,7 +19,14 @@ type Drag =
    *  pointerup never depends on React having re-rendered first. */
   | { kind: 'draw'; startX: number; startY: number; rect: Rect | null }
   | { kind: 'move'; id: string; startX: number; startY: number; from: Rect }
-  | { kind: 'resize'; id: string; handle: Handle; startX: number; startY: number; from: Rect };
+  | {
+      kind: 'resize';
+      id: string;
+      handle: Handle;
+      startX: number;
+      startY: number;
+      from: Rect;
+    };
 
 /** Distributes over the union, so each variant keeps its own required fields. */
 type WithoutStart<T> = T extends unknown ? Omit<T, 'startX' | 'startY'> : never;
@@ -165,7 +172,9 @@ export default function BoxOverlay({
     if (!move) return;
     e.preventDefault();
     setBoxes((bs) =>
-      bs.map((b) => (b.id === box.id ? { ...b, ...moveRect(b, move[0], move[1], width, height) } : b)),
+      bs.map((b) =>
+        b.id === box.id ? { ...b, ...moveRect(b, move[0], move[1], width, height) } : b,
+      ),
     );
   }
 
@@ -194,7 +203,7 @@ export default function BoxOverlay({
             ? 'border-stamp border-2 bg-[var(--stamp-wash)]/60'
             : box.source === 'auto'
               ? 'border-stamp border-2'
-              : // A suggestion reads as unfinished on purpose — dashed and in the
+              : // A suggestion reads as unfinished on purpose: dashed and in the
                 // detection colour, so it is clearly ours and clearly unverified.
                 box.source === 'suggested'
                 ? 'border-stamp border-2 border-dashed'
@@ -223,7 +232,14 @@ export default function BoxOverlay({
                   key={h}
                   className={HANDLE_CLASS}
                   style={{ ...HANDLE_POS[h], cursor: CURSOR[h] }}
-                  onPointerDown={(e) => begin(e, { kind: 'resize', id: box.id, handle: h, from: box })}
+                  onPointerDown={(e) =>
+                    begin(e, {
+                      kind: 'resize',
+                      id: box.id,
+                      handle: h,
+                      from: box,
+                    })
+                  }
                 />
               ))}
           </div>

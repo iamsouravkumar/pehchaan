@@ -2,9 +2,9 @@
  * Decode a dropped file into canvases the rest of the pipeline can use.
  *
  * Two outputs, deliberately:
- *   `full` — the resolution the export is rendered at, so output quality
+ *   `full`: the resolution the export is rendered at, so output quality
  *            matches what the user gave us.
- *   `work` — downscaled to OCR_MAX_EDGE, used for detection and on-screen
+ *   `work`: downscaled to OCR_MAX_EDGE, used for detection and on-screen
  *            display so a 12MP phone photo doesn't freeze the tab (TRD §8).
  *
  * Box coordinates live in `work` pixel space and scale up by `scaleToFull`.
@@ -58,7 +58,7 @@ export function normaliseCanvas(
   const longEdge = Math.max(full.width, full.height);
   const ratio = Math.min(1, OCR_MAX_EDGE / longEdge);
   // ponytail: single-step downscale. Swap to halving passes if OCR recall
-  // suffers on large photos — measure before adding the loop.
+  // suffers on large photos; measure before adding the loop.
   const work =
     ratio === 1
       ? full

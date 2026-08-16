@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 
-/* Design tokens — DESIGN.md §3. Light only in v1; dark is P2 and stays a token
+/* Design tokens (DESIGN.md §3). Light only in v1; dark is P2 and stays a token
    swap because every colour below is a custom property from day one. */
 :root {
   --paper: #f5f5f2;
@@ -8,20 +8,27 @@
   --ink: #17181b;
   --ink-soft: #5c6068;
   --rule: #ddddd7;
-  --stamp: #4b3c8f;
-  --stamp-wash: #edeaf6;
+  /* State: current step, selected box, focus ring. Was violet; now the same
+     graphite as actions, so the interface carries one accent instead of two.
+     Still its own token: state and action mean different things even when they
+     happen to look alike. */
+  --stamp: var(--action);
+  --stamp-wash: var(--action-wash);
   --redact: #0a0a0b;
   --safe: #2f6f55;
   --alert: #a63a2e;
 
-  /* Buttons, kept separate from --stamp. Stamp still means *state* — the
-     current step, a detected box, a focus ring — and reusing it for actions
-     made every clickable thing compete with those signals. Graphite reads as
-     the redaction bar the product is named for, and leaves violet to mean
-     something. Change these three values to restyle every button. */
-  --action: #23252b;
-  --action-hover: #35383f;
-  --action-wash: #ececea;
+  /* The one accent: buttons, and the state colours above that alias it. Slate
+     orange rather than graphite; the page is already ink on warm paper, and a
+     near-black button disappeared into that. Change these values to restyle
+     every button and every selection. */
+  --action: #f97316;
+  --action-hover: #ea680c;
+  --action-wash: #fdeee2;
+  /* Orange is too light to carry white text (2.9:1) or to be text itself on
+     paper. Fills get ink on top; anything that is *type* in the accent uses
+     this darker shade instead (6.5:1). */
+  --action-ink: #9a3412;
 }
 
 @theme inline {
@@ -38,6 +45,7 @@
   --color-action: var(--action);
   --color-action-hover: var(--action-hover);
   --color-action-wash: var(--action-wash);
+  --color-action-ink: var(--action-ink);
 
   --font-display: var(--font-newsreader);
   --font-sans: var(--font-plex-sans);
@@ -61,7 +69,7 @@ body {
 }
 
 /* The wordmark's bar sits over HCHA and slides off on first load, 400ms
-   (DESIGN.md §8). Percentages, not ch units — the display face is proportional,
+   (DESIGN.md §8). Percentages, not ch units: the display face is proportional,
    so a character-width offset drifts at every size. */
 .wordmark-bar {
   top: 0.08em;
@@ -81,7 +89,7 @@ body {
   }
 }
 
-/* Box selection, 120ms (DESIGN.md §8). Colour and fill only — a box that
+/* Box selection, 120ms (DESIGN.md §8). Colour and fill only; a box that
    changed size on selection would look like it moved under the user's finger. */
 .box {
   transition:
@@ -93,7 +101,7 @@ body {
    Landing page motion (LANDING.md §5).
 
    The spec names Framer Motion. This is CSS instead, with the same easing and
-   the same durations — partly because a 50KB dependency for eight keyframes is
+   the same durations, partly because a 50KB dependency for eight keyframes is
    hard to justify in a bundle whose selling point is what isn't in it, and
    partly because §6 requires the page to render with JavaScript disabled.
    Framer's initial states are inline styles applied by JS: without it the hero
@@ -105,7 +113,7 @@ body {
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Hero load sequence: wordmark, headline, subhead, CTA, card — under 1.2s. */
+/* Hero load sequence: wordmark, headline, subhead, CTA, card. Under 1.2s. */
 .rise-in {
   animation: rise-in 500ms var(--ease) both;
 }
@@ -187,7 +195,7 @@ body {
   border-color: var(--stamp);
 }
 
-/* The drop zone gives under a press. Barely — it is a large surface, and a big
+/* The drop zone gives under a press. Barely: it is a large surface, and a big
    target that jumps reads as unstable rather than responsive. Colour is eased
    here too: Tailwind silently drops `transition-[a,b,c]` arbitrary values, so
    the utility that was meant to do this generated nothing at all. */
@@ -235,7 +243,7 @@ body {
   }
 }
 
-/* DESIGN.md §10 — visible focus on every interactive element. */
+/* DESIGN.md §10: visible focus on every interactive element. */
 :focus-visible {
   outline: 2px solid var(--stamp);
   outline-offset: 2px;
@@ -243,12 +251,12 @@ body {
 
 /* Tailwind v4's preflight sets `cursor: default` on buttons, following the CSS
    spec rather than the convention every user has learned. Put the pointer back
-   on everything clickable — including labels, so the text beside a checkbox
+   on everything clickable, including labels, so the text beside a checkbox
    behaves like the control it toggles.
 
    Text fields are deliberately absent: an I-beam tells you it accepts typing.
-   Elements that set their own cursor inline — the box overlay's move and resize
-   handles — win over this rule, which is what we want. */
+   Elements that set their own cursor inline (the box overlay's move and resize
+   handles) win over this rule, which is what we want. */
 button,
 [role='button'],
 label,

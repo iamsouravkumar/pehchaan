@@ -5,8 +5,8 @@
  * first load: what's hidden can be revealed, and you decide. The product's whole
  * thesis in one gesture (DESIGN.md §2).
  *
- * The word underneath is always present in the DOM — the bar is a sibling that
- * moves, never a text swap — so the accessible name is "PEHCHAAN" at every
+ * The word underneath is always present in the DOM: the bar is a sibling that
+ * moves, never a text swap, so the accessible name is "PEHCHAAN" at every
  * frame, and a reader with reduced motion sees the finished state immediately.
  */
 export default function Wordmark() {

@@ -1,5 +1,5 @@
 /**
- * Destructive redaction — the single most important file in this codebase.
+ * Destructive redaction: the single most important file in this codebase.
  *
  * The common failure, in commercial tools as much as student ones, is drawing a
  * black rectangle as an overlay or a PDF annotation. The original is still in
@@ -21,8 +21,8 @@ const REDACT = '#0A0A0B';
  * How many pixel cells a masked region is reduced to along its long edge.
  *
  * Deliberately a ratio, not an absolute block size. An absolute size collapses
- * a small region to two or three cells — which reads as arbitrary colour bands,
- * not redaction — and gives a different result on the working canvas than on
+ * a small region to two or three cells, which reads as arbitrary colour bands,
+ * not redaction, and gives a different result on the working canvas than on
  * the full-resolution one, so the preview would be lying about the export.
  *
  * Twelve is coarse enough to destroy a face or an address line (a light blur is
@@ -68,7 +68,7 @@ export function redact(
 
 /**
  * The whole output pipeline: mask, then stamp. Used for both the on-screen
- * preview and the saved file, differing only in which canvas goes in — so the
+ * preview and the saved file, differing only in which canvas goes in, so the
  * preview can't drift from what gets written.
  */
 export function renderDocument(
@@ -93,7 +93,7 @@ function pixelate(ctx: CanvasRenderingContext2D, r: Region) {
 
   // Each cell must be an average of what it covers. Left on the default, the
   // browser samples instead, and a sampled cell can be any single pixel from
-  // the region — including a legible one.
+  // the region, including a legible one.
   sctx.imageSmoothingEnabled = true;
   sctx.imageSmoothingQuality = 'high';
   sctx.drawImage(ctx.canvas, r.x, r.y, r.w, r.h, 0, 0, small.width, small.height);

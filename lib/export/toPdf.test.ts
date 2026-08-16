@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildPdf, type PdfPage } from './toPdf.ts';
 
-/** Not a real JPEG — buildPdf embeds bytes verbatim and never decodes them. */
+/** Not a real JPEG; buildPdf embeds bytes verbatim and never decodes them. */
 const page = (bytes: number[], width = 1200, height = 1600): PdfPage => ({
   jpeg: new Uint8Array(bytes),
   width,

@@ -11,7 +11,7 @@ import { useEffect, useRef, useState } from 'react';
  * copy is read.
  *
  * Real DOM, not a video or a GIF: crisp at any size, weighs nothing, and it
- * still renders — complete and unredacted, which is the honest resting state —
+ * still renders complete and unredacted, which is the honest resting state,
  * if JavaScript never runs.
  *
  * Every value here is fabricated. The number fails its checksum on purpose.
@@ -70,7 +70,7 @@ export default function SampleCard() {
             Number
           </span>
           <span className="font-mono text-[15px] tracking-wider">
-            {/* The last four stay readable — the recipient still needs to know
+            {/* The last four stay readable; the recipient still needs to know
                 which document this is. */}
             <span className="relative">
               1234 5678
@@ -79,7 +79,6 @@ export default function SampleCard() {
             9012
           </span>
         </div>
-
       </div>
 
       {/* Its own row rather than an overlay: floated over the fields it lands on
@@ -87,7 +86,7 @@ export default function SampleCard() {
           worse than no stamp. */}
       <div className="mt-5 flex h-6 items-center justify-center">
         <span
-          className="stamp-press text-stamp/70 pointer-events-none font-mono text-[13px] whitespace-nowrap"
+          className="stamp-press text-action-ink/80 pointer-events-none font-mono text-[13px] whitespace-nowrap"
           style={{ animationPlayState: running ? 'running' : 'paused' }}
         >
           For HDFC KYC only · 15 Aug 2026
@@ -99,7 +98,7 @@ export default function SampleCard() {
 
 /**
  * One redaction bar. Absolutely positioned over its field so the text underneath
- * is what sets the width — the bar always fits the thing it covers.
+ * is what sets the width; the bar always fits the thing it covers.
  */
 function Bar({ index, running }: { index: number; running: boolean }) {
   return (

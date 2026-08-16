@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 
 /**
- * Registers the offline cache. Production only — in development the chunk URLs
+ * Registers the offline cache. Production only; in development the chunk URLs
  * change on every edit and a cached one serves stale code that looks like a
  * mystery bug.
  */

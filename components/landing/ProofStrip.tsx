@@ -35,7 +35,7 @@ export default function ProofStrip() {
         <p className="text-ink-soft pl-[18px] text-[15px]">
           {clean
             ? "Open your browser's Network tab and watch. This page doesn't talk to anyone either."
-            : `Something reached ${traffic.hosts.join(', ')}. That shouldn't happen — please open an issue.`}
+            : `Something reached ${traffic.hosts.join(', ')}. That shouldn't happen. Please open an issue.`}
         </p>
       </div>
     </section>

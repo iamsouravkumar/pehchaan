@@ -29,7 +29,9 @@ export default function ZoomControl({
           onClick={() => setZoom(level)}
           aria-pressed={zoom === level}
           className={`min-h-11 min-w-11 rounded border px-2 font-mono text-xs ${
-            zoom === level ? 'border-action bg-action-wash text-action' : 'border-rule text-ink-soft'
+            zoom === level
+              ? 'border-action bg-action-wash text-action-ink'
+              : 'border-rule text-ink-soft'
           }`}
         >
           {level}×

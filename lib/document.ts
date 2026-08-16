@@ -48,7 +48,7 @@ async function openPdf(file: File): Promise<Doc> {
   const pdfjs = await import('pdfjs-dist');
 
   // Without this, PDF.js fetches its worker from a CDN. It still works, so the
-  // failure is silent — and it would break the whole privacy claim. Vendored by
+  // failure is silent, and it would break the whole privacy claim. Vendored by
   // scripts/copy-assets.mjs.
   pdfjs.GlobalWorkerOptions.workerSrc = '/pdf/pdf.worker.min.mjs';
 
@@ -102,4 +102,3 @@ async function renderPage(
 
   return normaliseCanvas(canvas, name, type);
 }
-

@@ -5,7 +5,7 @@
  * prove it by working with the wifi off. That is the strongest demonstration
  * this product has, and it costs about forty lines (TRD §7).
  *
- * What is cached: the app itself — HTML, JS, CSS, the OCR engine, the WASM.
+ * What is cached: the app itself: HTML, JS, CSS, the OCR engine, the WASM.
  * What is never cached: the user's document. It only ever exists in memory, and
  * nothing here touches it.
  *

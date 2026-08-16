@@ -4,7 +4,7 @@ import type { Step } from '@/lib/steps';
 
 /**
  * Four bars across the top. They read as redaction bars filling in rather than
- * as generic progress dots, which is the point — the product's own mark doing
+ * as generic progress dots, which is the point: the product's own mark doing
  * the work (DESIGN.md §2).
  */
 export default function StepIndicator({
@@ -40,7 +40,7 @@ export default function StepIndicator({
                         : 'bg-rule h-px self-center'
                   }`}
                 />
-                {/* Below 768px only the current step is named — four labels
+                {/* Below 768px only the current step is named; four labels
                     across a 390px screen wrap into an unreadable stack
                     (DESIGN.md §6). */}
                 <span

@@ -6,7 +6,7 @@ import { useEffect, useRef } from 'react';
  * Mounts the working canvas and gives the box overlay something to sit on.
  *
  * The canvas node from `normalise()` is mounted directly rather than copied, so
- * the overlay's `inset-0` matches the document's on-screen geometry exactly —
+ * the overlay's `inset-0` matches the document's on-screen geometry exactly:
  * one source of truth, no scale bookkeeping, correct after any resize.
  *
  * Zoom works by widening the canvas inside a scrolling frame. Boxes are

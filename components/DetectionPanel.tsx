@@ -26,17 +26,19 @@ export default function DetectionPanel({
         Hidden areas · {boxes.length}
       </p>
 
-      {/* Not a secondary tool behind an icon — boxing things yourself is an
+      {/* Not a secondary tool behind an icon; boxing things yourself is an
           expected part of the flow, so it reads as primary (DESIGN.md §5). */}
       <button
         type="button"
         onClick={() => setDrawing(!drawing)}
         aria-pressed={drawing}
         className={`rounded px-3 py-2 text-[15px] font-medium ${
-          drawing ? 'bg-action hover:bg-action-hover text-white' : 'border-action text-action border'
+          drawing
+            ? 'bg-action hover:bg-action-hover text-ink'
+            : 'border-action text-action-ink border'
         }`}
       >
-        {drawing ? 'Drawing — drag on the document' : '+ Draw a box'}
+        {drawing ? 'Drawing: drag on the document' : '+ Draw a box'}
       </button>
 
       {boxes.length === 0 && (
@@ -114,7 +116,7 @@ export default function DetectionPanel({
             {box.source === 'suggested' && (
               <p className="text-ink-soft pl-6 text-xs">
                 {box.label === 'QR code'
-                  ? // Located by its finder patterns, never decoded — reading it
+                  ? // Located by its finder patterns, never decoded; reading it
                     // would mean holding the data this tool exists to protect.
                     'Found by its shape. It was never decoded, so check the box covers the whole square.'
                   : 'Found by reading the page, but the digits didn’t check out. Confirm the box covers the number.'}
@@ -122,7 +124,7 @@ export default function DetectionPanel({
             )}
             {!allowsBlur(box.label) && (
               <p className="text-ink-soft pl-6 text-xs">
-                Blur is guessable on digits — this one is always a solid block.
+                Blur is guessable on digits, so this one is always a solid block.
               </p>
             )}
           </li>

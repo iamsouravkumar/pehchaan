@@ -3,7 +3,7 @@
  *
  * These libraries load helper files at runtime and default to a CDN when they
  * can't find them locally. A CDN fetch would break the one claim this product
- * rests on, and it fails silently — the app still works, it just quietly talks
+ * rests on, and it fails silently; the app still works, it just quietly talks
  * to someone else's server. So the files are copied here at build time and the
  * paths are overridden in code (TRD §7).
  *
@@ -45,7 +45,7 @@ const ASSETS = [
     [`${VISION}/wasm/${name}.wasm`, `public/mediapipe/wasm/${name}.wasm`],
   ]),
 
-  // The face model isn't published to npm — Google serves it from a bucket. It
+  // The face model isn't published to npm; Google serves it from a bucket. It
   // is checked into vendor/ so a build never reaches the network for it, and so
   // the version can't change under us between builds.
   ['vendor/blaze_face_short_range.tflite', 'public/mediapipe/blaze_face_short_range.tflite'],
@@ -55,7 +55,7 @@ for (const [from, to] of ASSETS) {
   const target = resolve(to);
   await mkdir(dirname(target), { recursive: true });
 
-  // Script assets get their hardcoded CDN defaults rewritten on the way in —
+  // Script assets get their hardcoded CDN defaults rewritten on the way in;
   // Tesseract's worker carries three of them. Binaries are copied untouched.
   if (to.endsWith('.js') || to.endsWith('.mjs')) {
     const source = await readFile(resolve(from), 'utf8');

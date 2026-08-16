@@ -1,5 +1,5 @@
 /**
- * The wizard. Four steps, and the canvas stays on screen from step 2 onward —
+ * The wizard. Four steps, and the canvas stays on screen from step 2 onward:
  * the user should always be able to see the document they're deciding about
  * (DESIGN.md §5).
  */
@@ -41,7 +41,7 @@ export const STEPS: readonly Step[] = [
 
 /**
  * How far the user is allowed to be. Everything past step 1 needs a document,
- * and no step may be skipped forward — the review step in particular is
+ * and no step may be skipped forward: the review step in particular is
  * mandatory and can never be auto-advanced (TRD §3).
  */
 export function furthestStep(hasDocument: boolean): number {

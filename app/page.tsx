@@ -7,7 +7,7 @@ import Reveal from '@/components/landing/Reveal';
 /**
  * The landing page (LANDING.md).
  *
- * The visitor arrives suspicious — they have been told before that something was
+ * The visitor arrives suspicious; they have been told before that something was
  * private and found out otherwise. The page has one job: make the claim feel
  * provable rather than promised, before they upload anything. Hence a card that
  * redacts itself, a counter reading real numbers, and mechanisms rather than
@@ -72,7 +72,7 @@ export default function Landing() {
       <section className="mx-auto grid max-w-5xl items-center gap-10 px-5 pt-10 pb-16 md:grid-cols-2 md:pt-16">
         <div className="flex flex-col gap-6">
           <h1 className="font-display text-[clamp(2.25rem,6vw,3.5rem)] leading-[1.08]">
-            {/* Two lines, staggered — the second half is the turn. */}
+            {/* Two lines, staggered: the second half is the turn. */}
             <span className="rise-in block" style={{ animationDelay: '0.15s' }}>
               Share your document.
             </span>
@@ -85,7 +85,7 @@ export default function Landing() {
             className="text-ink-soft rise-in max-w-prose text-[17px] leading-relaxed"
             style={{ animationDelay: '0.33s' }}
           >
-            Hide the parts they don&apos;t need — the Aadhaar number, the address, the photo — and
+            Hide the parts they don&apos;t need: the Aadhaar number, the address, the photo. Then
             stamp what it&apos;s for. Runs entirely in your browser. Your document never leaves your
             device.
           </p>
@@ -96,7 +96,7 @@ export default function Landing() {
           >
             <Link
               href="/tool"
-              className="bg-action hover:bg-action-hover press rounded px-5 py-3 text-[17px] font-medium text-white"
+              className="bg-action hover:bg-action-hover press text-ink rounded px-5 py-3 text-[17px] font-medium"
             >
               Open Pehchaan
             </Link>
@@ -106,7 +106,10 @@ export default function Landing() {
           </div>
         </div>
 
-        <div className="rise-in flex justify-center md:justify-end" style={{ animationDelay: '0.51s' }}>
+        <div
+          className="rise-in flex justify-center md:justify-end"
+          style={{ animationDelay: '0.51s' }}
+        >
           <SampleCard />
         </div>
       </section>
@@ -121,7 +124,7 @@ export default function Landing() {
               key={step.n}
               className="border-rule step-card bg-surface flex flex-col gap-2 rounded-lg border p-4"
             >
-              <span className="text-stamp font-mono text-xs">{step.n}</span>
+              <span className="text-action-ink font-mono text-xs">{step.n}</span>
               <h3 className="text-[17px] font-medium">{step.title}</h3>
               <p className="text-ink-soft text-[15px] leading-relaxed">{step.body}</p>
             </li>
@@ -141,10 +144,10 @@ export default function Landing() {
           ))}
         </div>
         <p className="text-ink-soft mt-8 text-[15px]">
-          The code is open —{' '}
+          The code is open:{' '}
           <a
             href="https://github.com/iamsouravkumar/pehchaan"
-            className="text-stamp underline underline-offset-4"
+            className="text-action-ink underline underline-offset-4"
           >
             read it yourself
           </a>
@@ -158,7 +161,7 @@ export default function Landing() {
           <div className="flex flex-col gap-2">
             <h3 className="font-mono text-xs tracking-wide uppercase">Detected automatically</h3>
             <p className="text-[15px] leading-relaxed">
-              Aadhaar — number, date of birth, address, photo, QR code. PAN — number, date of birth,
+              Aadhaar: number, date of birth, address, photo, QR code. PAN: number, date of birth,
               photo.
             </p>
           </div>
@@ -184,7 +187,7 @@ export default function Landing() {
           </p>
           <Link
             href="/tool"
-            className="bg-action hover:bg-action-hover press rounded px-5 py-3 text-[17px] font-medium text-white"
+            className="bg-action hover:bg-action-hover press text-ink rounded px-5 py-3 text-[17px] font-medium"
           >
             Open Pehchaan
           </Link>
@@ -194,7 +197,10 @@ export default function Landing() {
       <footer className="border-rule border-t">
         <div className="text-ink-soft mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-5 py-6 font-mono text-xs">
           <span>Pehchaan · built for CodeStorm 2026</span>
-          <a href="https://github.com/iamsouravkumar/pehchaan" className="underline underline-offset-4">
+          <a
+            href="https://github.com/iamsouravkumar/pehchaan"
+            className="underline underline-offset-4"
+          >
             Source
           </a>
         </div>

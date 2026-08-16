@@ -3,13 +3,13 @@
  *
  * We need exactly one thing from a PDF library: wrap one JPEG per page. That is
  * one of the simplest structures the format has, and a general-purpose library
- * costs several hundred kilobytes of features we never call — including, in
+ * costs several hundred kilobytes of features we never call, including, in
  * jsPDF's case, a hardcoded CDN URL sitting in the bundle of a product whose
  * whole claim is that there is nowhere for your document to go. Dead code or
  * not, it is the wrong string to have in this bundle.
  *
  * Each page is embedded as the redacted raster. The original PDF's text layer
- * is deliberately not preserved — preserving it would preserve the very text we
+ * is deliberately not preserved; preserving it would preserve the very text we
  * just redacted, which is exactly how real documents have leaked. Losing text
  * selectability is the correct trade (TRD §6).
  */
@@ -28,7 +28,7 @@ export type PdfPage = {
 
 /**
  * Assemble the file. Offsets in the cross-reference table are byte counts, not
- * string lengths — JPEG data is binary and a UTF-16 length would be wrong — so
+ * string lengths (JPEG data is binary and a UTF-16 length would be wrong), so
  * everything is accumulated as encoded chunks.
  */
 export function buildPdf(pages: PdfPage[]): Blob {
@@ -103,17 +103,12 @@ export function buildPdf(pages: PdfPage[]): Blob {
   for (let id = 1; id <= count; id++) {
     push(`${String(offsets[id]).padStart(10, '0')} 00000 n \n`);
   }
-  push(
-    `trailer\n<< /Size ${count + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`,
-  );
+  push(`trailer\n<< /Size ${count + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`);
 
   return new Blob(chunks as BlobPart[], { type: 'application/pdf' });
 }
 
-export async function savePdf(
-  canvases: HTMLCanvasElement[],
-  sourceName: string,
-): Promise<string> {
+export async function savePdf(canvases: HTMLCanvasElement[], sourceName: string): Promise<string> {
   const pages: PdfPage[] = [];
   for (const canvas of canvases) {
     const blob = await toBlob(canvas, 'image/jpeg');

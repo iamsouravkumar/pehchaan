@@ -36,12 +36,9 @@ export default function ExportBar({
   const boxes = boxesByPage[pageIndex] ?? [];
 
   // Rendered at working resolution. The saved file is the same operation on the
-  // full-resolution page — every measurement in the pipeline is a ratio, so
+  // full-resolution page; every measurement in the pipeline is a ratio, so
   // what's on screen here is what lands in the file.
-  const preview = useMemo(
-    () => renderDocument(page.work, boxes, 1, stamp),
-    [page, boxes, stamp],
-  );
+  const preview = useMemo(() => renderDocument(page.work, boxes, 1, stamp), [page, boxes, stamp]);
 
   const hidden = Object.values(boxesByPage)
     .flat()
@@ -74,75 +71,83 @@ export default function ExportBar({
 
   return (
     <div className="flex flex-col gap-4">
-      <DocumentCanvas canvas={preview} />
-      {multiPage && (
-        <p className="text-ink-soft font-mono text-xs">
-          Showing page {pageIndex + 1}. All {doc.pageCount} pages are saved.
-        </p>
-      )}
+      {/* Same row as the review and purpose steps: canvas beside a 18rem
+          column, so the document is the same size on every step instead of
+          growing on the last one. */}
+      <div className="flex flex-col items-start gap-5 md:flex-row">
+        <DocumentCanvas canvas={preview} />
 
-      {hidden === 0 && (
-        <p role="alert" className="text-alert text-[15px]">
-          Nothing is hidden. Saving now gives you a copy of the original.
-        </p>
-      )}
+        <aside className="flex w-full flex-col gap-4 md:w-72">
+          {multiPage && (
+            <p className="text-ink-soft font-mono text-xs">
+              Showing page {pageIndex + 1}. All {doc.pageCount} pages are saved.
+            </p>
+          )}
 
-      <fieldset className="flex items-center gap-4">
-        <legend className="sr-only">File format</legend>
-        {(
-          [
-            ['Image', false],
-            ['PDF', true],
-          ] as const
-        ).map(([label, value]) => (
-          <label
-            key={label}
-            className={`text-[15px] ${multiPage && !value ? 'text-ink-soft opacity-40' : ''}`}
-          >
-            <input
-              type="radio"
-              name="format"
-              checked={asPdf === value}
-              disabled={multiPage && !value}
-              onChange={() => setAsPdf(value)}
-              className="mr-1.5"
-            />
-            {label}
-          </label>
-        ))}
-        {multiPage && (
-          <span className="text-ink-soft text-[13px]">
-            A {doc.pageCount}-page document saves as a PDF.
-          </span>
-        )}
-      </fieldset>
+          {hidden === 0 && (
+            <p role="alert" className="text-alert text-[15px]">
+              Nothing is hidden. Saving now gives you a copy of the original.
+            </p>
+          )}
 
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={save}
-          disabled={saving}
-          className="bg-action hover:bg-action-hover rounded px-4 py-2 text-[15px] font-medium text-white disabled:opacity-60"
-        >
-          {saving ? 'Saving…' : 'Save redacted copy'}
-        </button>
-        <p className="text-ink-soft font-mono text-xs">
-          {hidden} {hidden === 1 ? 'area' : 'areas'} hidden · .{extension}
-        </p>
+          <fieldset className="flex flex-wrap items-center gap-4">
+            <legend className="sr-only">File format</legend>
+            {(
+              [
+                ['Image', false],
+                ['PDF', true],
+              ] as const
+            ).map(([label, value]) => (
+              <label
+                key={label}
+                className={`text-[15px] ${multiPage && !value ? 'text-ink-soft opacity-40' : ''}`}
+              >
+                <input
+                  type="radio"
+                  name="format"
+                  checked={asPdf === value}
+                  disabled={multiPage && !value}
+                  onChange={() => setAsPdf(value)}
+                  className="mr-1.5"
+                />
+                {label}
+              </label>
+            ))}
+            {multiPage && (
+              <span className="text-ink-soft text-[13px]">
+                A {doc.pageCount}-page document saves as a PDF.
+              </span>
+            )}
+          </fieldset>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={save}
+              disabled={saving}
+              className="bg-action hover:bg-action-hover text-ink rounded px-4 py-2 text-[15px] font-medium disabled:opacity-60"
+            >
+              {saving ? 'Saving…' : 'Save redacted copy'}
+            </button>
+            <p className="text-ink-soft font-mono text-xs">
+              {hidden} {hidden === 1 ? 'area' : 'areas'} hidden · .{extension}
+            </p>
+          </div>
+
+          {error && (
+            <p role="alert" className="text-alert text-[15px]">
+              {error}
+            </p>
+          )}
+
+          {saved && (
+            <p className="text-safe text-[15px]">
+              Saved as <span className="font-mono text-xs">{saved}</span>. The hidden parts are gone
+              from the pixels, not covered by a layer that can be removed.
+            </p>
+          )}
+        </aside>
       </div>
-
-      {error && (
-        <p role="alert" className="text-alert text-[15px]">
-          {error}
-        </p>
-      )}
-
-      {saved && (
-        <p className="text-safe text-[15px]">
-          Saved as <span className="font-mono text-xs">{saved}</span>. The hidden parts are gone
-          from the pixels, not covered by a layer that can be removed.
-        </p>
-      )}
 
       {/* The closing line (DESIGN.md §5). It says the same thing as the badge in
           the corner, at the moment the user is deciding whether to trust it. */}

@@ -3,7 +3,7 @@
  *
  * The habit this replaces is real: people scrawl "for HDFC KYC only" across a
  * photocopy by hand, badly and inconsistently. This does the same job legibly,
- * and the date is generated rather than typed — a back-dated purpose stamp is a
+ * and the date is generated rather than typed; a back-dated purpose stamp is a
  * forgery vector, so it is never editable (DESIGN.md §5).
  *
  * Every measurement here is a ratio of the canvas, never an absolute pixel
@@ -11,7 +11,7 @@
  * full-resolution export. The preview has to be the truth.
  */
 
-/* The preset list lives in lib/purpose.ts — a preset now decides which fields
+/* The preset list lives in lib/purpose.ts; a preset now decides which fields
    are masked as well as what the stamp reads, and that is not this file's job. */
 
 /** Fixed format rather than the visitor's locale, so the stamp reads the same to everyone. */
