@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { canDetectCodes, detectCodes, padCode } from './qr.ts';
 import { allowsBlur } from '../boxes.ts';
 
-/** A canvas stand-in — nothing here reads pixels, only dimensions. */
+/** A canvas stand-in; nothing here reads pixels, only dimensions. */
 const canvas = (width = 1000, height = 800) => ({ width, height }) as HTMLCanvasElement;
 
 function withDetector(result: unknown, fn: () => Promise<void>) {
@@ -44,13 +44,21 @@ test('pads a non-square detection without distorting it', () => {
 });
 
 test('detections become labelled QR boxes', async () => {
-  await withDetector([{ boundingBox: { x: 700, y: 80, width: 180, height: 180 }, format: 'qr_code' }], async () => {
-    const boxes = await detectCodes(canvas());
-    assert.equal(boxes.length, 1);
-    assert.equal(boxes[0].label, 'QR code');
-    assert.equal(boxes[0].source, 'auto');
-    assert.equal(boxes[0].style, 'block');
-  });
+  await withDetector(
+    [
+      {
+        boundingBox: { x: 700, y: 80, width: 180, height: 180 },
+        format: 'qr_code',
+      },
+    ],
+    async () => {
+      const boxes = await detectCodes(canvas());
+      assert.equal(boxes.length, 1);
+      assert.equal(boxes[0].label, 'QR code');
+      assert.equal(boxes[0].source, 'auto');
+      assert.equal(boxes[0].style, 'block');
+    },
+  );
 });
 
 test('a browser without BarcodeDetector returns nothing rather than throwing', async () => {

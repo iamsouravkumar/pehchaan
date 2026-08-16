@@ -5,7 +5,7 @@
  * never screen space. The overlay renders them as percentages of the canvas,
  * so boxes survive zoom, window resize and any display size for free.
  *
- * Every function here is pure — the interaction layer owns pointer state, this
+ * Every function here is pure; the interaction layer owns pointer state, this
  * file owns what a rectangle is allowed to be.
  */
 
@@ -15,7 +15,7 @@ export type Box = Rect & {
   id: string;
   label: string;
   /**
-   * `suggested` is a detection we are not confident in — a 12-digit group that
+   * `suggested` is a detection we are not confident in: a 12-digit group that
    * failed its checksum, most likely because OCR misread a digit. It is still
    * drawn and still enabled, because the cost of a wrong box is one click and
    * the cost of a missed Aadhaar number is the whole product (TRD §4.2).
@@ -28,6 +28,10 @@ export type Box = Rect & {
 
 export const LABELS = [
   'Aadhaar number',
+  // The 16-digit virtual ID printed under the number on newer cards. It maps
+  // straight back to the Aadhaar number, so hiding one and leaving the other is
+  // hiding nothing.
+  'VID',
   'PAN',
   'Date of birth',
   'Address',
@@ -49,6 +53,7 @@ export const LABELS = [
  */
 const BLOCK_ONLY = new Set([
   'Aadhaar number',
+  'VID',
   'QR code',
   'PAN',
   'Date of birth',
@@ -59,7 +64,7 @@ const BLOCK_ONLY = new Set([
 
 /**
  * A label as it reads inside a sentence. Lowercased, except for the ones that
- * are acronyms — "found pan and aadhaar number" reads like a typo.
+ * are acronyms; "found pan and aadhaar number" reads like a typo.
  */
 export function spoken(label: string): string {
   return label === label.toUpperCase() ? label : label.toLowerCase();
@@ -77,7 +82,7 @@ export const MIN_SIZE = 8;
 
 /**
  * `crypto.randomUUID` only exists in a secure context, so it is missing over
- * plain http — which is exactly how the app gets opened on a phone from a LAN
+ * plain http, which is exactly how the app gets opened on a phone from a LAN
  * address during testing. A box id is a React key and a selection handle;
  * nothing here needs cryptographic randomness, and throwing on the one device
  * this product is designed for would be a poor trade for that guarantee.
@@ -122,7 +127,7 @@ export function clampRect(r: Rect, W: number, H: number): Rect {
   };
 }
 
-/** Translate without changing size — a move that hits the edge stops, not shrinks. */
+/** Translate without changing size: a move that hits the edge stops, not shrinks. */
 export function moveRect(r: Rect, dx: number, dy: number, W: number, H: number): Rect {
   return {
     ...r,

@@ -1,6 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { detectAddress, detectDates, detectLabelledNumbers } from './generic.ts';
+import {
+  detectAddress,
+  detectDates,
+  detectLabelledNumbers,
+  detectNames,
+} from './generic.ts';
 import { detectAll } from './index.ts';
 import type { Word } from '../ocr/worker.ts';
 
@@ -59,7 +64,7 @@ test('S/O starts an address block too', () => {
 test('a label anchors the number next to it', () => {
   const boxes = detectLabelledNumbers(line(['Roll', 'No.', '2019CS4471']), 1000, 500);
   assert.equal(boxes.length, 1);
-  // Heuristic, not verified — so it arrives as a suggestion.
+  // Heuristic, not verified, so it arrives as a suggestion.
   assert.equal(boxes[0].source, 'suggested');
 });
 
@@ -77,4 +82,48 @@ test('overlapping findings collapse to one box', () => {
   const boxes = detectAll(words, 1000, 500);
   const labels = boxes.map((b) => b.label).sort();
   assert.deepEqual(labels, ['Address', 'Phone number']);
+});
+
+test('finds a roll number printed under its heading, not beside it', () => {
+  // The table layout half of all marksheets use.
+  const header: Word[] = [{ text: 'Roll', confidence: 90, x: 60, y: 100, w: 60, h: 24 }];
+  const value: Word[] = [{ text: '2019CS4471', confidence: 90, x: 62, y: 140, w: 150, h: 24 }];
+  const boxes = detectLabelledNumbers([...header, ...value], 800, 600);
+
+  assert.equal(boxes.length, 1);
+  assert.equal(boxes[0].label, 'Roll number');
+  assert.ok(boxes[0].y > 120, 'boxes the value below, not the heading');
+});
+
+test('a value under a different column is not this label’s value', () => {
+  const header: Word[] = [{ text: 'Roll', confidence: 90, x: 60, y: 100, w: 60, h: 24 }];
+  const elsewhere: Word[] = [{ text: '2019CS4471', confidence: 90, x: 600, y: 140, w: 150, h: 24 }];
+  assert.equal(detectLabelledNumbers([...header, ...elsewhere], 800, 600).length, 0);
+});
+
+test('knows the many names a student number goes by', () => {
+  for (const label of ['Seat', 'Enrolment', 'PRN', 'Index', 'Registration']) {
+    const words = line([label, 'No.', '456789']);
+    assert.equal(detectLabelledNumbers(words, 800, 600).length, 1, `${label} should anchor`);
+  }
+});
+
+test('a year beside a label is not a roll number', () => {
+  assert.equal(detectLabelledNumbers(line(['Registration', 'Year', '2019']), 800, 600).length, 0);
+});
+
+test('boxes the candidate name, not the school', () => {
+  const named = detectNames(line(['Name', 'of', 'Candidate', 'RAHUL', 'SHARMA']), 800, 600);
+  assert.equal(named.length, 1);
+  assert.equal(named[0].label, 'Name');
+
+  assert.equal(detectNames(line(['Name', 'of', 'School', 'ST', 'XAVIERS']), 800, 600).length, 0);
+});
+
+test('boxes a parent name', () => {
+  assert.equal(detectNames(line(["Father's", 'Name', 'ANIL', 'SHARMA']), 800, 600).length, 1);
+});
+
+test('a name label with a number after it boxes nothing', () => {
+  assert.equal(detectNames(line(['Name', ':', '123456']), 800, 600).length, 0);
 });

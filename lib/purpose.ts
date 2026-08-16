@@ -7,8 +7,8 @@
  * entitled to, so the preset makes that call for them (PRD §7 P1).
  *
  * Presets are expressed as what stays *visible*, never as what gets hidden.
- * Written the other way, a field nobody thought of — a new detector's label, a
- * box the user drew themselves — would default to revealed. Written this way it
+ * Written the other way, a field nobody thought of (a new detector's label, a
+ * box the user drew themselves) would default to revealed. Written this way it
  * defaults to hidden, which is the only safe direction for this product to be
  * wrong in (PRD §8).
  */
@@ -24,9 +24,9 @@ export type Preset = {
 };
 
 /**
- * The Aadhaar number is on no reveal list. UIDAI's own guidance is that a full
- * number should never be shared with a private party, and every recipient below
- * is a private party.
+ * The Aadhaar number is on no reveal list, and neither is the VID that maps
+ * back to it. UIDAI's own guidance is that a full number should never be shared
+ * with a private party, and every recipient below is a private party.
  */
 export const PRESETS: readonly Preset[] = [
   {
@@ -62,11 +62,14 @@ export function findPreset(name: string): Preset | undefined {
 
 /**
  * Apply a preset's policy to a page's boxes. Toggling stays available on every
- * box afterwards — this sets a starting point, it does not take the decision
+ * box afterwards; this sets a starting point, it does not take the decision
  * away.
  */
 export function applyPreset(boxes: Box[], preset: Preset): Box[] {
-  return boxes.map((box) => ({ ...box, enabled: !preset.reveal.includes(box.label) }));
+  return boxes.map((box) => ({
+    ...box,
+    enabled: !preset.reveal.includes(box.label),
+  }));
 }
 
 /** What the preset will leave readable, for the line under the chips. */

@@ -1,5 +1,5 @@
 /**
- * Verhoeff checksum — the last digit of an Aadhaar number.
+ * Verhoeff checksum: the last digit of an Aadhaar number.
  *
  * A bare 12-digit regex matches enrolment numbers, VID fragments, two phone
  * numbers sitting next to each other, and plain OCR noise. The checksum removes
@@ -48,7 +48,7 @@ export function verhoeff(digits: string): boolean {
 }
 
 /**
- * Aadhaar numbers never begin with 0 or 1 — the first digit is reserved so the
+ * Aadhaar numbers never begin with 0 or 1; the first digit is reserved so the
  * number can't collide with a phone number. Cheaper than the checksum and it
  * rejects a whole class of false positives before we get there.
  */

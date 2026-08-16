@@ -1,7 +1,7 @@
 /**
  * Runs every detector over one page and hands back a clean set of boxes.
  *
- * Detectors overlap by design — an address block contains a PIN, a labelled
+ * Detectors overlap by design: an address block contains a PIN, a labelled
  * number sits inside a line another rule also matched. Two boxes over the same
  * ink is not a second finding, it is one finding the user has to dismiss twice,
  * so overlaps collapse to whichever detector was more specific.
@@ -11,7 +11,12 @@ import type { Box } from '../boxes.ts';
 import type { Word } from '../ocr/worker.ts';
 import { detectAadhaar } from './aadhaar.ts';
 import { detectPan } from './pan.ts';
-import { detectAddress, detectDates, detectLabelledNumbers } from './generic.ts';
+import {
+  detectAddress,
+  detectDates,
+  detectLabelledNumbers,
+  detectNames,
+} from './generic.ts';
 
 /**
  * Order matters: earlier detectors win an overlap. Aadhaar and PAN are
@@ -22,7 +27,7 @@ export function detectAll(
   words: Word[],
   width: number,
   height: number,
-  /** Findings from detectors that don't read text — faces, today. */
+  /** Findings from detectors that don't read text: faces, today. */
   extra: Box[] = [],
 ): Box[] {
   const all = [
@@ -30,6 +35,7 @@ export function detectAll(
     ...detectPan(words, width, height),
     ...detectDates(words, width, height),
     ...detectLabelledNumbers(words, width, height),
+    ...detectNames(words, width, height),
     ...detectAddress(words, width, height),
     ...extra,
   ];
@@ -37,7 +43,7 @@ export function detectAll(
   const kept: Box[] = [];
   for (const box of all) {
     // An address block legitimately contains other findings, so it only loses
-    // to a box that covers most of *it* — not to every field inside it.
+    // to a box that covers most of *it*, not to every field inside it.
     if (!kept.some((k) => covers(k, box) > 0.6)) kept.push(box);
   }
   return kept;

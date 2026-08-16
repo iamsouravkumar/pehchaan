@@ -43,7 +43,7 @@ test('reads a number OCR returned with letter confusions', () => {
 });
 
 test('does not pair two unrelated numbers into a false positive', () => {
-  // Six digits then six digits, separated by a word — not one run.
+  // Six digits then six digits, separated by a word, not one run.
   assert.equal(detectAadhaar(line(['234567', 'PIN', '890124']), 1000, 500).length, 0);
 });
 
@@ -62,4 +62,40 @@ test('boxes stay inside the canvas', () => {
   const boxes = detectAadhaar(line(['2345', '6789', '0124'], 0), 400, 60);
   assert.ok(boxes[0].x >= 0 && boxes[0].y >= 0);
   assert.ok(boxes[0].x + boxes[0].w <= 400 && boxes[0].y + boxes[0].h <= 60);
+});
+
+test('recovers a number whose first digit OCR read as a letter', () => {
+  // "D345 6789 0124" off a worn card: D for 0 puts the run outside the
+  // leading-digit rule, but three groups of four is signature enough.
+  const boxes = detectAadhaar(line(['D345', '6789', '0124']), 1000, 500);
+  assert.equal(boxes.length, 1);
+  assert.equal(boxes[0].source, 'suggested');
+});
+
+test('a genuine 0 or 1 in front is still not an Aadhaar number', () => {
+  // The waiver above applies only where the first character was not a digit.
+  assert.equal(detectAadhaar(line(['0345', '6789', '0124']), 1000, 500).length, 0);
+});
+
+test('reads the digits OCR most often gets wrong on a low-quality card', () => {
+  // G for 6, T for 7, A for 4, b for 6, U for 0.
+  const boxes = detectAadhaar(line(['2345', 'GTA9', 'b12U']), 1000, 500);
+  assert.equal(boxes.length, 1);
+});
+
+test('a VID is boxed whole, not as an Aadhaar number plus a spare group', () => {
+  // Sixteen digits in four groups, as printed under the number on newer cards.
+  // The first twelve of them look exactly like an Aadhaar number.
+  const boxes = detectAadhaar(line(['9123', '4567', '8901', '2345']), 1000, 500);
+  assert.equal(boxes.length, 1);
+  assert.equal(boxes[0].label, 'VID');
+  // Covers all four groups. Boxing only the first three would leave the last
+  // four digits of the VID readable.
+  assert.ok(boxes[0].x + boxes[0].w > 50 + 4 * 80 + 3 * 15);
+});
+
+test('a VID and an Aadhaar number on separate lines are both found', () => {
+  const words = [...line(['2345', '6789', '0124'], 100), ...line(['9123', '4567', '8901', '2345'], 300)];
+  const labels = detectAadhaar(words, 1000, 500).map((b) => b.label);
+  assert.deepEqual(labels.sort(), ['Aadhaar number', 'VID']);
 });

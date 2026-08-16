@@ -1,7 +1,7 @@
 /**
  * Tesseract lifecycle.
  *
- * Three separate paths default to jsDelivr — the worker script, the WASM core,
+ * Three separate paths default to jsDelivr: the worker script, the WASM core,
  * and the language data. Getting any of them wrong doesn't throw: the app keeps
  * working while quietly fetching several megabytes from someone else's server,
  * which is the one failure this product cannot survive. All three are overridden
@@ -12,6 +12,7 @@
  */
 
 import type { Worker } from 'tesseract.js';
+import { prepareForOcr } from './prepare.ts';
 
 export type Word = {
   text: string;
@@ -56,7 +57,9 @@ function get(): Promise<Worker> {
   if (!worker) {
     worker = start().catch((cause) => {
       worker = null; // let a later attempt retry rather than caching the failure
-      throw new OcrUnavailable('Automatic detection is unavailable.', { cause });
+      throw new OcrUnavailable('Automatic detection is unavailable.', {
+        cause,
+      });
     });
   }
   return worker;
@@ -67,7 +70,7 @@ export class OcrUnavailable extends Error {}
 /**
  * Generous: a first load pulls several megabytes and a big page takes seconds
  * to recognise on a phone. But it must be finite. When Tesseract can't fetch an
- * asset it neither resolves nor rejects — it simply stops, and without a
+ * asset it neither resolves nor rejects; it simply stops, and without a
  * deadline the review step would sit on "Looking for sensitive fields…"
  * forever. A stalled promise has to become a visible degrade (TRD §10).
  */
@@ -83,10 +86,15 @@ export function withDeadline<T>(work: Promise<T>, ms: number): Promise<T> {
   });
 }
 
-/** Recognised words with boxes. The raw text alone is useless — we need where. */
+/** Recognised words with boxes. The raw text alone is useless; we need where. */
 export async function readWords(canvas: HTMLCanvasElement): Promise<Word[]> {
+  // Recognition runs on a prepared copy: upscaled if the page is small, and
+  // contrast-stretched either way. Boxes come back in that copy's coordinates,
+  // so every one is divided by the scale before it leaves this function.
+  const { canvas: prepared, scale } = prepareForOcr(canvas);
+
   const { data } = await withDeadline(
-    get().then((engine) => engine.recognize(canvas, {}, { blocks: true })),
+    get().then((engine) => engine.recognize(prepared, {}, { blocks: true })),
     OCR_DEADLINE_MS,
   );
 
@@ -97,10 +105,10 @@ export async function readWords(canvas: HTMLCanvasElement): Promise<Word[]> {
     .map((word) => ({
       text: word.text,
       confidence: word.confidence,
-      x: word.bbox.x0,
-      y: word.bbox.y0,
-      w: word.bbox.x1 - word.bbox.x0,
-      h: word.bbox.y1 - word.bbox.y0,
+      x: word.bbox.x0 / scale,
+      y: word.bbox.y0 / scale,
+      w: (word.bbox.x1 - word.bbox.x0) / scale,
+      h: (word.bbox.y1 - word.bbox.y0) / scale,
     }))
     .filter((word) => word.text.trim().length > 0);
 }

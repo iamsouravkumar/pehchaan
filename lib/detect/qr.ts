@@ -1,7 +1,7 @@
 /**
  * QR and barcode detection.
  *
- * The QR on an Aadhaar card is not a link — it is the record. Name, date of
+ * The QR on an Aadhaar card is not a link; it is the record. Name, date of
  * birth, gender, full address, and on newer cards a compressed photograph, all
  * encoded in the square. Someone hides the twelve digits, sees a clean black bar
  * where they used to be, and shares a document whose QR still hands over
@@ -11,8 +11,8 @@
  * tool produced the confidence (PRD §12). So this is not an optional extra
  * detector; it closes a hole in the core promise.
  *
- * `BarcodeDetector` is a browser API — no dependency, nothing to vendor, no
- * network — but it only exists on Android, macOS and ChromeOS. On Windows
+ * `BarcodeDetector` is a browser API: no dependency, nothing to vendor, no
+ * network, but it only exists on Android, macOS and ChromeOS. On Windows
  * desktop Chrome, Safari and Firefox it is absent, so a geometric fallback
  * finds the symbol instead (./qrLocate.ts). Between them, every browser gets
  * QR coverage (TRD §4.2).
@@ -34,7 +34,9 @@ type DetectedBarcode = {
   format: string;
 };
 
-type Detector = { detect(source: HTMLCanvasElement): Promise<DetectedBarcode[]> };
+type Detector = {
+  detect(source: HTMLCanvasElement): Promise<DetectedBarcode[]>;
+};
 
 /**
  * Every 2D format an Indian document might carry. PDF417 shows up on some
@@ -52,7 +54,12 @@ export function padCode(rect: Rect, width: number, height: number): Rect {
   // than distorting a tall detection into a wider one.
   const grow = Math.max(rect.w, rect.h) * PAD;
   return clampRect(
-    { x: rect.x - grow, y: rect.y - grow, w: rect.w + grow * 2, h: rect.h + grow * 2 },
+    {
+      x: rect.x - grow,
+      y: rect.y - grow,
+      w: rect.w + grow * 2,
+      h: rect.h + grow * 2,
+    },
     width,
     height,
   );
@@ -85,7 +92,7 @@ export async function detectCodes(canvas: HTMLCanvasElement): Promise<Box[]> {
       ),
     );
   } catch {
-    // A malformed symbol or an unsupported format list — try geometry before
+    // A malformed symbol or an unsupported format list; try geometry before
     // giving up, since the user's document does not care why the API failed.
     return locateFallback(canvas);
   }

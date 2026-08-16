@@ -1,13 +1,13 @@
 /**
  * Finding a QR code without decoding it.
  *
- * `BarcodeDetector` only exists on Android, macOS and ChromeOS — on Windows
+ * `BarcodeDetector` only exists on Android, macOS and ChromeOS; on Windows
  * desktop Chrome, where this will most likely be demonstrated, it is simply
  * absent. Leaving QR detection to that API means the biggest hole in the
  * promise stays open on the most common platform.
  *
  * So this locates the symbol geometrically. Every QR carries three finder
- * patterns — the nested squares in three corners — and they are deliberately
+ * patterns (the nested squares in three corners), and they are deliberately
  * designed to be findable from any direction: a line crossing one always reads
  * dark-light-dark-light-dark in a 1:1:3:1:1 ratio, whatever the rotation. Find
  * three of those with a consistent module size and you have located the symbol.
@@ -73,12 +73,11 @@ function otsu(histogram: Uint32Array, total: number): number {
     sumBackground += value * histogram[value];
     const meanBackground = sumBackground / weightBackground;
     const meanForeground = (sum - sumBackground) / weightForeground;
-    const variance =
-      weightBackground * weightForeground * (meanBackground - meanForeground) ** 2;
+    const variance = weightBackground * weightForeground * (meanBackground - meanForeground) ** 2;
 
     // `>=` so the last of several equally good splits wins. On a photo the
-    // maximum is unique and this makes no difference; on pure black-on-white —
-    // a scan, or a generated test page — every level between the two spikes
+    // maximum is unique and this makes no difference; on pure black-on-white (
+    // a scan, or a generated test page) every level between the two spikes
     // scores the same, and taking the first one puts the threshold at 0, where
     // nothing counts as dark.
     if (variance >= best) {
@@ -161,22 +160,34 @@ export function findCentres(grid: Grid): Centre[] {
       (x) => dark[y * width + x],
       (x, module) => {
         const cx = Math.round(x);
-        if (!confirmVertically(grid, cx, y, module)) return;
-        merge(centres, { x: cx, y, module });
+        // The row we happened to sample is rarely the middle of the pattern, so
+        // the vertical pass hands back where the middle actually is. Without
+        // that the centre can sit a module and a half off, and the box drawn
+        // from it clips the edge of the symbol.
+        const middle = confirmVertically(grid, cx, y, module);
+        if (middle === null) return;
+        // A finder pattern is a set of concentric squares, so the 1:1:3:1:1 run
+        // holds through its centre in every direction, diagonals included. Dense
+        // small print does not survive that: a row of letters can produce the
+        // run horizontally and a column of them vertically, but the two are
+        // coincidences that do not line up on the diagonals as well. This is
+        // what stops the block of fine print on a marksheet reading as a symbol.
+        if (!confirmDiagonally(grid, cx, y, module)) return;
+        merge(centres, { x: cx, y: middle, module });
       },
     );
   }
   return centres;
 }
 
-/** Re-run the ratio test down the column through a candidate. */
-function confirmVertically(grid: Grid, x: number, y: number, module: number): boolean {
+/** Re-run the ratio test down the column, returning the true centre or null. */
+function confirmVertically(grid: Grid, x: number, y: number, module: number): number | null {
   const { dark, width, height } = grid;
   const reach = Math.ceil(module * 5);
   const top = Math.max(0, y - reach);
   const bottom = Math.min(height - 1, y + reach);
 
-  let found = false;
+  let middle: number | null = null;
   scanLine(
     bottom - top + 1,
     (i) => dark[(top + i) * width + x],
@@ -184,6 +195,38 @@ function confirmVertically(grid: Grid, x: number, y: number, module: number): bo
       // The same pattern, at the same scale, crossing this point.
       if (Math.abs(verticalModule - module) > module * 0.5) return;
       if (Math.abs(top + centre - y) > module * 2) return;
+      middle = top + centre;
+    },
+  );
+  return middle;
+}
+
+/** The ratio test along both diagonals through a candidate. */
+function confirmDiagonally(grid: Grid, x: number, y: number, module: number): boolean {
+  return onDiagonal(grid, x, y, module, 1) && onDiagonal(grid, x, y, module, -1);
+}
+
+/** One diagonal: `slope` is +1 for down-right, -1 for down-left. */
+function onDiagonal(grid: Grid, x: number, y: number, module: number, slope: number): boolean {
+  const { dark, width, height } = grid;
+  const reach = Math.ceil(module * 5);
+
+  // How far the diagonal can run before leaving the page in either direction.
+  const back = Math.min(reach, y, slope === 1 ? x : width - 1 - x);
+  const forward = Math.min(reach, height - 1 - y, slope === 1 ? width - 1 - x : x);
+  const startX = x - back * slope;
+  const startY = y - back;
+
+  let found = false;
+  scanLine(
+    back + forward + 1,
+    (i) => dark[(startY + i) * width + (startX + i * slope)],
+    (centre, diagonalModule) => {
+      // Runs are counted in diagonal steps, and one step advances a pixel in x
+      // as well as in y, so a band five pixels wide is still five steps: the
+      // module measures the same as it does across a row, not √2 larger.
+      if (Math.abs(diagonalModule - module) > module * 0.5) return;
+      if (Math.abs(centre - back) > module * 2) return;
       found = true;
     },
   );
@@ -204,40 +247,174 @@ function merge(centres: Centre[], next: Centre) {
 }
 
 /**
- * The symbol's bounds from three or more finder centres of a consistent size.
+ * Three centres that sit where a QR's finders sit: the corners of a square, so
+ * two equal legs meeting at a right angle with the diagonal across them.
  *
- * ponytail: groups every compatible centre into one box, so two QR codes side
- * by side on the same document come back as a single region covering both. That
- * over-covers, which is the safe direction, and the user can resize. Split by
- * distance clustering if a real document ever needs it.
+ * Without this, any three run-ratio matches at a similar scale were accepted,
+ * and a curved rule printed across a card produces plenty of those: a stroke
+ * that thickens and thins crosses the 1:1:3:1:1 test again and again along its
+ * length. Those matches lie strung out along the curve, which is exactly what
+ * the corners of a square are not.
+ */
+function bestTriple(centres: Centre[]): [Centre, Centre, Centre] | null {
+  let best: [Centre, Centre, Centre] | null = null;
+  let bestError = Infinity;
+
+  for (let i = 0; i < centres.length - 2; i++) {
+    for (let j = i + 1; j < centres.length - 1; j++) {
+      for (let k = j + 1; k < centres.length; k++) {
+        const trio = [centres[i], centres[j], centres[k]] as [Centre, Centre, Centre];
+        const error = squareness(trio);
+        if (error !== null && error < bestError) {
+          bestError = error;
+          best = trio;
+        }
+      }
+    }
+  }
+  return best;
+}
+
+/** How far three centres are from a right isosceles triangle, or null if too far. */
+function squareness(trio: [Centre, Centre, Centre]): number | null {
+  const [a, b, c] = trio;
+  const module = (a.module + b.module + c.module) / 3;
+  const sides = [
+    { d: Math.hypot(a.x - b.x, a.y - b.y), opposite: c },
+    { d: Math.hypot(b.x - c.x, b.y - c.y), opposite: a },
+    { d: Math.hypot(a.x - c.x, a.y - c.y), opposite: b },
+  ].sort((p, q) => p.d - q.d);
+
+  const [leg1, leg2, diagonal] = sides.map((s) => s.d);
+
+  // Version 1 is 21 modules across, so its finder centres sit 14 apart; the
+  // largest QR puts them 170 apart. Anything outside that is not a symbol at
+  // this module size, whatever its shape.
+  const legModules = leg2 / module;
+  if (legModules < 11 || legModules > 190) return null;
+
+  // Two equal legs, and a diagonal √2 longer. Generous enough for a photograph
+  // taken at an angle, tight enough that points strung along a curve fail.
+  const legError = (leg2 - leg1) / leg2;
+  const diagonalError = Math.abs(diagonal - leg2 * Math.SQRT2) / (leg2 * Math.SQRT2);
+  if (legError > 0.3 || diagonalError > 0.25) return null;
+
+  return legError + diagonalError;
+}
+
+/**
+ * The symbol's bounds from the three finder centres, or null.
+ *
+ * ponytail: returns the single best triple, so a document carrying two QR codes
+ * gets the better-formed one boxed and the other missed. Cluster and return a
+ * list if a real document ever needs it; today the Aadhaar card has one.
  */
 export function boundsFrom(centres: Centre[]): Rect | null {
   if (centres.length < 3) return null;
 
-  // Finder patterns of one symbol share a module size. Take the largest group
-  // that agrees, which drops stray matches from printed texture.
+  // Finder patterns of one symbol share a module size. Drop candidates that
+  // nothing else agrees with, which clears stray matches from printed texture.
   const group = centres.filter((candidate) => {
-    const alike = centres.filter((other) => Math.abs(other.module - candidate.module) <= candidate.module * 0.35);
+    const alike = centres.filter(
+      (other) => Math.abs(other.module - candidate.module) <= candidate.module * 0.35,
+    );
     return alike.length >= 3;
   });
   if (group.length < 3) return null;
 
-  const module = group.reduce((sum, c) => sum + c.module, 0) / group.length;
+  const trio = bestTriple(group);
+  if (!trio) return null;
+
+  const module = trio.reduce((sum, c) => sum + c.module, 0) / 3;
   const pad = module * EDGE_MODULES;
-  const xs = group.map((c) => c.x);
-  const ys = group.map((c) => c.y);
+  const xs = trio.map((c) => c.x);
+  const ys = trio.map((c) => c.y);
   const x = Math.min(...xs) - pad;
   const y = Math.min(...ys) - pad;
 
   return { x, y, w: Math.max(...xs) + pad - x, h: Math.max(...ys) + pad - y };
 }
 
-/** Where the QR is, in canvas pixels, or null. Reads pixels; decodes nothing. */
-export function locateQr(canvas: HTMLCanvasElement): Rect | null {
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+/**
+ * The fraction of a region that is dark.
+ *
+ * A QR is close to half dark by construction. A region that three stray matches
+ * happen to span is mostly the card behind them, so this is the cheapest way to
+ * tell a symbol from a coincidence, and it costs one pass over the box.
+ */
+export function darkRatio(grid: Grid, rect: Rect): number {
+  const left = Math.max(0, Math.floor(rect.x));
+  const top = Math.max(0, Math.floor(rect.y));
+  const right = Math.min(grid.width, Math.ceil(rect.x + rect.w));
+  const bottom = Math.min(grid.height, Math.ceil(rect.y + rect.h));
+  if (right <= left || bottom <= top) return 0;
+
+  let dark = 0;
+  for (let y = top; y < bottom; y++) {
+    for (let x = left; x < right; x++) dark += grid.dark[y * grid.width + x];
+  }
+  return dark / ((right - left) * (bottom - top));
+}
+
+/** A QR sits near half dark. Wide enough for glare at one end, print gain at the other. */
+const DARK_RANGE = [0.2, 0.75] as const;
+
+/** One pass at one scale. Null when this scale finds nothing believable. */
+function locateAt(canvas: HTMLCanvasElement, scale: number): Rect | null {
+  const width = Math.round(canvas.width * scale);
+  const height = Math.round(canvas.height * scale);
+
+  let source: HTMLCanvasElement = canvas;
+  if (scale !== 1) {
+    const bigger = document.createElement('canvas');
+    bigger.width = width;
+    bigger.height = height;
+    const ctx = bigger.getContext('2d');
+    if (!ctx) return null;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(canvas, 0, 0, width, height);
+    source = bigger;
+  }
+
+  const ctx = source.getContext('2d', { willReadFrequently: true });
   if (!ctx) return null;
 
-  const { width, height } = canvas;
-  const { data } = ctx.getImageData(0, 0, width, height);
-  return boundsFrom(findCentres(binarise(data, width, height)));
+  const grid = binarise(ctx.getImageData(0, 0, width, height).data, width, height);
+  const bounds = boundsFrom(findCentres(grid));
+  if (!bounds) return null;
+
+  const ratio = darkRatio(grid, bounds);
+  if (ratio < DARK_RANGE[0] || ratio > DARK_RANGE[1]) return null;
+
+  return {
+    x: bounds.x / scale,
+    y: bounds.y / scale,
+    w: bounds.w / scale,
+    h: bounds.h / scale,
+  };
+}
+
+/**
+ * Where the QR is, in canvas pixels, or null. Reads pixels; decodes nothing.
+ *
+ * Tried at more than one scale. The run-ratio test needs a module at least
+ * MIN_MODULE pixels wide, and rows are sampled every third line, so a symbol
+ * printed small — or a card cropped out of a larger photo and saved again at a
+ * few hundred pixels — falls under both floors and is invisible to a single
+ * pass. Enlarging the page interpolates no new detail, but it puts the module
+ * width back above the threshold the scan can measure.
+ */
+export function locateQr(canvas: HTMLCanvasElement): Rect | null {
+  for (const scale of scalesFor(Math.max(canvas.width, canvas.height))) {
+    const found = locateAt(canvas, scale);
+    if (found) return found;
+  }
+  return null;
+}
+
+/** Natural size first, then enlarged, and only for a page small enough to need it. */
+export function scalesFor(longEdge: number): number[] {
+  if (longEdge <= 0) return [1];
+  if (longEdge >= 1600) return [1];
+  return longEdge >= 800 ? [1, 2] : [1, 2, 3];
 }
